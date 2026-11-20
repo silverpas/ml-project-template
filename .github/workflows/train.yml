@@ -1,0 +1,59 @@
+# Train in Azure ML: submits jobs/train-register.yml and shows the result.
+# If the new model beats the champion, it is registered with status=candidate.
+# To approve it, run "Deploy (approval gate)" with the version shown on the run page.
+#
+# Needs the five AZURE_* GitHub variables (see README.md in this folder).
+# Without them the job is skipped, so a fresh repo from the template stays green.
+
+name: Train (Azure ML)
+
+on:
+  workflow_dispatch: # the "Run workflow" button on the Actions tab
+
+permissions:
+  id-token: write # lets GitHub log in to Azure with OIDC (no password stored)
+  contents: read
+
+jobs:
+  train:
+    name: Train, evaluate, register
+    if: vars.AZURE_ML_WORKSPACE != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v7
+
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install the Azure ML CLI and select the workspace
+        run: |
+          az extension add --name ml --yes
+          az configure --defaults group="${{ vars.AZURE_RESOURCE_GROUP }}" workspace="${{ vars.AZURE_ML_WORKSPACE }}"
+
+      # Submit the job, then follow its log until it finishes.
+      # GIT_COMMIT: the job's copy of the code has no .git, so pass the commit.
+      - name: Run the train-register job in Azure ML
+        run: |
+          job=$(az ml job create --file jobs/train-register.yml \
+            --set environment_variables.GIT_COMMIT="${{ github.sha }}" \
+            --query name --output tsv)
+          echo "JOB_NAME=$job" >> "$GITHUB_ENV"
+          az ml job stream --name "$job"
+          status=$(az ml job show --name "$job" --query status --output tsv)
+          if [ "$status" != "Completed" ]; then echo "Job ended with status $status"; exit 1; fi
+
+      # The scripts wrote outputs/evaluation.md and registration.json in the job.
+      - name: Show the results on the run page
+        run: |
+          az ml job download --name "$JOB_NAME" --download-path job-output
+          cat "$(find job-output -name evaluation.md)" >> "$GITHUB_STEP_SUMMARY"
+          version=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['version'] or '')" \
+            "$(find job-output -name registration.json)")
+          if [ -n "$version" ]; then
+            echo "To approve: Actions → **Deploy (approval gate)** → Run workflow → version **$version**." >> "$GITHUB_STEP_SUMMARY"
+          fi

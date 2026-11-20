@@ -1,0 +1,37 @@
+# Step 5 "Run and review": every quarter, open an issue asking the model owner
+# to decide: keep, retrain or retire the model. Needs no Azure.
+# Skipped in the template repo itself; runs in repos created from it.
+
+name: Review reminder (quarterly)
+
+on:
+  schedule:
+    - cron: "0 8 1 1,4,7,10 *" # 08:00 UTC on 1 January, April, July, October
+  workflow_dispatch:
+
+permissions:
+  issues: write # only to open the issue
+
+jobs:
+  remind:
+    name: Open the review issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open the issue (not in the template repo itself)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(gh api "repos/${{ github.repository }}" --jq .is_template)" = "true" ]; then
+            echo "This is the template repo: no review needed."; exit 0
+          fi
+          gh issue create --repo "${{ github.repository }}" \
+            --title "Quarterly model review: keep, retrain or retire?" \
+            --body "Time for the quarterly review of this model (step 5 of the ML process).
+
+          - [ ] Are the predictions still used? (Power BI report views, consumers)
+          - [ ] Is the model still good? Compare recent results with the metrics in model-card.md
+          - [ ] Has the data changed? (new machines, sensors, products)
+          - [ ] Decision: **keep**, **retrain** (run Train) or **retire** (stop score.yml)
+          - [ ] Update model-card.md with the decision and date
+
+          Close this issue when the decision is recorded."

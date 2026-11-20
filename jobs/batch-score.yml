@@ -1,0 +1,45 @@
+# Azure ML job: score new data with the approved (champion) model and write
+# the predictions to the predictions lakehouse in Fabric. Default scoring path
+# (design option B).
+#
+# Submitted every night by .github/workflows/score.yml, or by hand:
+#   az ml job create --file jobs/batch-score.yml
+#
+# score.py finds the champion in the workspace registry through MLflow
+# (Azure ML sets MLFLOW_TRACKING_URI inside the job).
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+display_name: tool-wear batch-score
+experiment_name: tool-wear-scoring
+
+code: ../
+
+command: >-
+  python -m src.score
+  --input ${{inputs.input_data}}
+  --output ${{outputs.predictions}}/predictions.parquet
+
+inputs:
+  input_data:
+    type: uri_file
+    # ASSUMPTION: new rows to score are exported to this OneLake path
+    # (same datastore as the training data). Change it to yours.
+    path: azureml://datastores/onelake_manufacturing/paths/Files/ml/tool-wear/to-score/latest.csv
+    mode: download
+
+outputs:
+  predictions:
+    type: uri_folder
+    # ASSUMPTION: the platform team registers the predictions lakehouse as a
+    # datastore called "onelake_predictions", and the ml-project module gives
+    # this project's identity write access to it. Each night overwrites
+    # latest/predictions.parquet; Power BI reads it through the lakehouse.
+    path: azureml://datastores/onelake_predictions/paths/Files/predictions/tool-wear/latest/
+    mode: rw_mount
+
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: ../environment/conda.yml
+
+# ASSUMPTION: same CPU cluster as training.
+compute: azureml:cpu-cluster

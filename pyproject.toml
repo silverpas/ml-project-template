@@ -11,6 +11,10 @@ target-version = "py311"
 # E/F: errors, I: import order, UP: modern Python syntax, B: common bugs
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+# Fabric notebooks get a ready-made `spark` session, so it is never imported.
+"notebooks/*.ipynb" = ["F821"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]   # so tests can `import src`

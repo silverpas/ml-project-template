@@ -31,7 +31,13 @@ def setup_mlflow(config: dict[str, Any]) -> None:
 
 
 def git_commit() -> str:
-    """Return the current git commit hash, or 'unknown' outside a git repo."""
+    """Return the current git commit hash, or 'unknown' outside a git repo.
+
+    Azure ML jobs get a copy of the code without .git, so the GitHub workflow
+    passes the commit in the GIT_COMMIT environment variable instead.
+    """
+    if os.environ.get("GIT_COMMIT"):
+        return os.environ["GIT_COMMIT"]
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True

@@ -63,7 +63,24 @@ approval gate work before your project has Azure access:
    downloaded from the run page.
 
 To see a second model compete, change a setting under `model.params` in
-`config.yml` and push. Delete the demo once your project runs in Azure.
+`config.yml`, push, and run the demo again. Delete the demo once your project
+runs in Azure.
+
+## Run it in Azure ML
+
+Once the platform team has set up Azure and you have stored the five GitHub
+variables and created the `production` environment:
+
+1. *Actions* → **Train (Azure ML)** → Run workflow. Azure ML runs
+   `jobs/train-register.yml`; the run page shows the comparison and, if the
+   model is better, the version to approve.
+2. *Actions* → **Deploy (approval gate)** → Run workflow with that version.
+   A reviewer approves; the version becomes champion.
+3. **Score (nightly)** then runs every night and writes predictions to the
+   predictions lakehouse. **Review reminder** opens an issue every quarter.
+
+Before the first run, check every `# ASSUMPTION:` line in `jobs/*.yml` with the
+platform team (datastore names, data paths, compute name).
 
 ## Folders
 
@@ -74,10 +91,10 @@ To see a second model compete, change a setting under `model.params` in
 | [`tests/`](tests/README.md) | Automatic checks on fake data | Adapt the fake data, add tests for your cleaning |
 | `requirements.txt` | Python packages with exact versions | Rarely |
 | `pyproject.toml` | Settings for pytest and ruff | No |
-| [`.github/workflows/`](.github/workflows/README.md) | CI, the demo flow, and (coming) the Azure workflows | No |
-| `jobs/`, `environment/` | Azure ML job files and packages | *coming in milestone 3* |
-| `notebooks/` | Optional: scoring inside Fabric instead of Azure ML | *coming in milestone 3* |
-| `model-card.md` | Owner, purpose, data version, metrics, approvals | *coming in milestone 3* |
+| [`.github/workflows/`](.github/workflows/README.md) | CI, the Azure workflows (train, deploy, score, review) and the demo | No |
+| `jobs/`, `environment/` | Azure ML job files and packages | Check the `# ASSUMPTION:` lines |
+| `notebooks/` | Optional: scoring inside Fabric instead of Azure ML | Only if you use it |
+| `model-card.md` | Owner, purpose, data version, metrics, approvals | **Yes**, fill it in |
 
 Created locally and never committed: `data/` (including `data/predictions/`, the local
 stand-in for the predictions lakehouse), `outputs/`, `mlflow.db`, `mlruns/`, `.venv/`.

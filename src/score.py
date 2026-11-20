@@ -3,8 +3,8 @@
 Usage:
     python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
 
-By default it uses the approved model (models:/<name>@champion). Pass --model to
-use another one, e.g. models:/tool-wear@candidate or models:/tool-wear/2.
+By default it uses the approved model (the version tagged status=champion).
+Pass --model to use another one, e.g. models:/tool-wear/2.
 The output has the input rows plus failure_probability, predicted_failure,
 model_uri and scored_at.
 
@@ -22,8 +22,8 @@ import mlflow
 import pandas as pd
 
 from src.common import load_config, setup_mlflow
-from src.evaluate import CHAMPION_ALIAS
 from src.prep import clean_columns
+from src.registry import champion_uri
 
 
 def read_table(path: Path) -> pd.DataFrame:
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     config = load_config(args.config)
     setup_mlflow(config)
-    model_uri = args.model or f"models:/{config['model']['name']}@{CHAMPION_ALIAS}"
+    model_uri = args.model or champion_uri(config["model"]["name"])
 
     predictions = score(read_table(Path(args.input)), model_uri, config["evaluation"]["threshold"])
     write_table(predictions, Path(args.output))

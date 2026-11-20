@@ -1,0 +1,61 @@
+# THE APPROVAL GATE. Makes a candidate version the champion (the version that
+# nightly scoring uses). GitHub pauses this run until a required reviewer of
+# the "production" environment clicks Approve (Settings → Environments).
+#
+# Start it from the Actions tab ("Run workflow") with the version shown by train.yml.
+
+name: Deploy (approval gate)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Model version to approve (shown on the Train run page)"
+        required: true
+        type: string
+
+permissions:
+  id-token: write # OIDC login to Azure
+  contents: read
+
+jobs:
+  promote:
+    name: Approve and promote
+    if: vars.AZURE_ML_WORKSPACE != ''
+    runs-on: ubuntu-latest
+    environment: production # waits here for a reviewer's approval
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v7
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # azureml-mlflow lets MLflow talk to the Azure ML registry. Same version
+      # as in environment/conda.yml.
+      - name: Install packages
+        run: pip install -r requirements.txt azureml-mlflow==1.62.0.post7
+
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Point MLflow at the workspace registry, then run the same promote
+      # command you run locally.
+      - name: Promote the version to champion
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          az extension add --name ml --yes
+          export MLFLOW_TRACKING_URI=$(az ml workspace show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ vars.AZURE_ML_WORKSPACE }}" \
+            --query mlflow_tracking_uri --output tsv)
+          python -m src.register --promote "$VERSION"
+          echo "Version **$VERSION** is now the **champion**. Nightly scoring uses it from now on." >> "$GITHUB_STEP_SUMMARY"

@@ -28,8 +28,8 @@ from sklearn.metrics import (
 )
 
 from src.common import load_config, read_json, setup_mlflow, write_json
+from src.registry import CHAMPION, find_version
 
-CHAMPION_ALIAS = "champion"
 # The metrics compute_metrics returns; evaluation.primary_metric must be one of them.
 METRIC_NAMES = ["average_precision", "roc_auc", "f1", "precision", "recall"]
 
@@ -64,11 +64,12 @@ def is_better(new_score: float, current_score: float | None, min_improvement: fl
 def load_champion(model_name: str) -> tuple[Any, str] | tuple[None, None]:
     """Load the current champion model and its version, or (None, None) if there is none."""
     try:
-        version = mlflow.MlflowClient().get_model_version_by_alias(model_name, CHAMPION_ALIAS)
+        version = find_version(model_name, CHAMPION)
     except MlflowException:
-        return None, None  # model not registered yet, or no version approved yet
-    model = mlflow.sklearn.load_model(f"models:/{model_name}@{CHAMPION_ALIAS}")
-    return model, str(version.version)
+        return None, None  # model not registered yet
+    if version is None:
+        return None, None  # registered, but no version approved yet
+    return mlflow.sklearn.load_model(f"models:/{model_name}/{version}"), version
 
 
 def summary_markdown(evaluation: dict[str, Any]) -> str:

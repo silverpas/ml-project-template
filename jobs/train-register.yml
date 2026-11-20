@@ -1,0 +1,39 @@
+# Azure ML job: prepare → train → evaluate → register, on a cloud computer.
+# The same scripts as on your laptop; only the data path and computer differ.
+#
+# Submitted by .github/workflows/train.yml, or by hand:
+#   az ml job create --file jobs/train-register.yml
+#
+# Inside the job, Azure ML sets MLFLOW_TRACKING_URI, so MLflow logs to the
+# workspace and registers the model there (see src/common.py).
+# Files the scripts write to ./outputs/ are saved with the job automatically.
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+display_name: tool-wear train-register
+experiment_name: tool-wear # same as mlflow.experiment in config.yml
+
+code: ../ # the whole repo (files listed in .gitignore are not uploaded)
+
+command: >-
+  python -m src.prep --raw ${{inputs.training_data}} &&
+  python -m src.train &&
+  python -m src.evaluate &&
+  python -m src.register
+
+inputs:
+  training_data:
+    type: uri_file
+    # Frozen copy of the training data in OneLake, in a dated folder, so every
+    # run can be traced back to the exact data it used (design section 4.4).
+    # ASSUMPTION: the platform team registers the OneLake lakehouse as an Azure ML
+    # datastore called "onelake_manufacturing", and the data owner exports the
+    # data to Files/ml/tool-wear/<date>/. Change the name, path and date to yours.
+    path: azureml://datastores/onelake_manufacturing/paths/Files/ml/tool-wear/2026-11-20/ai4i2020.csv
+    mode: download
+
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: ../environment/conda.yml
+
+# ASSUMPTION: the ml-workspace module creates a CPU cluster with this name.
+compute: azureml:cpu-cluster

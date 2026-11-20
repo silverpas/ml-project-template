@@ -1,0 +1,43 @@
+# Nightly scoring in Azure ML (design option B, the default): submits
+# jobs/batch-score.yml, which scores new data with the champion model and
+# writes the predictions to the predictions lakehouse in Fabric.
+
+name: Score (nightly, Azure ML)
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # every night at 02:00 UTC
+  workflow_dispatch: # or by hand from the Actions tab
+
+permissions:
+  id-token: write # OIDC login to Azure
+  contents: read
+
+jobs:
+  score:
+    name: Batch score with the champion
+    if: vars.AZURE_ML_WORKSPACE != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v7
+
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install the Azure ML CLI and select the workspace
+        run: |
+          az extension add --name ml --yes
+          az configure --defaults group="${{ vars.AZURE_RESOURCE_GROUP }}" workspace="${{ vars.AZURE_ML_WORKSPACE }}"
+
+      - name: Run the batch-score job in Azure ML
+        run: |
+          job=$(az ml job create --file jobs/batch-score.yml --query name --output tsv)
+          az ml job stream --name "$job"
+          status=$(az ml job show --name "$job" --query status --output tsv)
+          if [ "$status" != "Completed" ]; then echo "Job ended with status $status"; exit 1; fi
+          echo "Scored with job \`$job\`; predictions written to the predictions lakehouse." >> "$GITHUB_STEP_SUMMARY"

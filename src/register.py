@@ -4,11 +4,12 @@ Two modes:
 
     python -m src.register
         Reads outputs/evaluation.json. If the new model is a candidate, adds it
-        to the MLflow model registry with the alias "candidate".
+        to the MLflow model registry with the tag status=candidate.
 
     python -m src.register --promote 3
-        Approval: moves the alias "champion" to version 3. Scoring uses the
-        champion. In CI this runs only after a reviewer approves (deploy.yml).
+        Approval: tags version 3 status=champion (the previous champion becomes
+        archived). Scoring uses the champion. In GitHub this runs only after a
+        reviewer approves (deploy.yml). See src/registry.py.
 """
 
 from __future__ import annotations
@@ -18,9 +19,7 @@ import argparse
 import mlflow
 
 from src.common import load_config, read_json, setup_mlflow, write_json
-from src.evaluate import CHAMPION_ALIAS
-
-CANDIDATE_ALIAS = "candidate"
+from src.registry import CANDIDATE, CHAMPION, promote, set_status
 
 
 def register_candidate(evaluation: dict, model_name: str) -> str | None:
@@ -28,18 +27,12 @@ def register_candidate(evaluation: dict, model_name: str) -> str | None:
     if not evaluation["is_candidate"]:
         return None
     version = mlflow.register_model(evaluation["model_uri"], model_name)
-    client = mlflow.MlflowClient()
-    client.set_registered_model_alias(model_name, CANDIDATE_ALIAS, version.version)
+    set_status(model_name, version.version, CANDIDATE)
     metric = evaluation["primary_metric"]
-    client.set_model_version_tag(
+    mlflow.MlflowClient().set_model_version_tag(
         model_name, version.version, f"test_{metric}", str(evaluation["new_metrics"][metric])
     )
     return str(version.version)
-
-
-def promote(model_name: str, version: str) -> None:
-    """Mark a registered version as approved by pointing the champion alias at it."""
-    mlflow.MlflowClient().set_registered_model_alias(model_name, CHAMPION_ALIAS, version)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -63,7 +56,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.promote:
         promote(model_name, args.promote)
-        print(f"{model_name} version {args.promote} is now '{CHAMPION_ALIAS}'")
+        print(f"{model_name} version {args.promote} is now '{CHAMPION}'")
         return
 
     version = register_candidate(read_json(args.evaluation), model_name)
@@ -73,7 +66,7 @@ def main(argv: list[str] | None = None) -> None:
         print("Not registered: the new model is not better than the champion.")
     else:
         print(
-            f"Registered {model_name} version {version} as '{CANDIDATE_ALIAS}'. "
+            f"Registered {model_name} version {version} as '{CANDIDATE}'. "
             f"To approve it: python -m src.register --promote {version}"
         )
 

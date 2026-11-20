@@ -17,8 +17,9 @@ failures on the public AI4I 2020 dataset (use case `tool-wear`).
 Jargon in one line each:
 - **MLflow**: a logbook for training runs plus a registry (shelf) of model versions.
 - **Azure ML job**: a script that runs on a cloud computer instead of your laptop.
-- **Alias** `candidate` / `champion`: labels on model versions: "better, waiting
-  for approval" / "approved, in use".
+- **Status tag** `candidate` / `champion` / `archived`: label on a model version:
+  "better, waiting for approval" / "approved, in use" / "replaced" (`src/registry.py`).
+- **Datastore**: Azure ML's named shortcut to a storage place, e.g. a OneLake lakehouse.
 - **OIDC**: GitHub logs in to Azure without a stored password.
 
 ## Where this repo sits in the overall process
@@ -38,12 +39,12 @@ Jargon in one line each:
 config.yml          all settings (data, target, columns to drop, model, metric)
 src/                prep.py, train.py, evaluate.py, register.py, score.py, common.py
 tests/              pytest checks on small fake data
-.github/workflows/  ci.yml, demo-local-flow.yml (demo only)
-                    train.yml, deploy.yml, score.yml, review-reminder.yml  (milestone 3)
-jobs/               train-register.yml, batch-score.yml   (Azure ML CLI v2, milestone 3)
-environment/        conda.yml: packages for the Azure ML jobs   (milestone 3)
-notebooks/          fabric_batch_score.ipynb: OPTIONAL option A   (milestone 3)
-model-card.md       owner, purpose, data version, metrics, approvals   (milestone 3)
+.github/workflows/  ci.yml, train.yml, deploy.yml, score.yml, review-reminder.yml,
+                    demo-local-flow.yml (demo only)
+jobs/               train-register.yml, batch-score.yml   (Azure ML CLI v2 job specs)
+environment/        conda.yml: packages for the Azure ML jobs (same versions as requirements.txt)
+notebooks/          fabric_batch_score.ipynb: OPTIONAL option A (PREDICT in Fabric)
+model-card.md       owner, purpose, data version, metrics, approvals
 data/, outputs/, mlflow.db, mlruns/   local only, never committed
                     (data/predictions/ = local stand-in for the predictions lakehouse)
 ```
@@ -56,11 +57,14 @@ data/, outputs/, mlflow.db, mlruns/   local only, never committed
 3. Change the fake data in `tests/conftest.py` to your columns, and the column
    lists in `tests/test_rules.py` to your leaking and ID columns.
 4. Run the pipeline locally (commands below) until tests pass and metrics make sense.
-5. Push to `main`. CI checks the code. In Azure (milestone 3), `train.yml`
+5. Fill in `model-card.md`. In `jobs/*.yml`, check every `# ASSUMPTION:` line
+   (datastore names, data paths, compute) with the platform team.
+6. Push to `main`: CI checks the code. Run **Train** (`train.yml`): Azure ML
    trains and evaluates; if the new model is better it becomes `candidate`.
-6. A reviewer approves in GitHub (`production` environment) → `champion`.
-7. `score.yml` scores every night with the champion and writes predictions.
-8. Every quarter `review-reminder.yml` opens an issue: keep, retrain or retire?
+7. Run **Deploy** (`deploy.yml`) with that version: a reviewer approves in
+   GitHub (`production` environment) → `champion`. Add a row to `model-card.md`.
+8. `score.yml` scores every night with the champion and writes predictions.
+9. Every quarter `review-reminder.yml` opens an issue: keep, retrain or retire?
 
 **Scoring:** the default is an **Azure ML batch job** (`jobs/batch-score.yml`)
 that writes to the predictions lakehouse in Fabric. The notebook in
@@ -81,6 +85,7 @@ python -m src.train
 python -m src.evaluate                       # writes outputs/evaluation.json and .md
 python -m src.register                       # registers as "candidate" if better
 python -m src.register --promote <version>   # human approval: set "champion"
+az ml job create --file jobs/train-register.yml   # same steps in Azure ML (after az login)
 python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
 pytest
 ruff check . && ruff format --check .
@@ -94,7 +99,9 @@ Each script is a CLI: `python -m src.<step> --help` shows its options.
 No infrastructure code lives here. The platform team creates the Azure
 resources and gives you these IDs; store them as **GitHub variables** (not secrets):
 `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
-`AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`.
+`AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`. Without them the Azure workflows
+are skipped, so a new repo stays green. Also create the `production` environment
+with the reviewers as required reviewers.
 
 ## Rules (what not to do)
 
@@ -111,6 +118,9 @@ resources and gives you these IDs; store them as **GitHub variables** (not secre
   on the same test set. Do not skip it.
 - **Never promote without approval**: `champion` is set only after a reviewer approves.
 - **Every training run logs** parameters, metrics, the data version and the git commit.
+- **Same packages everywhere**: a version change goes in `requirements.txt` AND
+  `environment/conda.yml` (`tests/test_azure_files.py` checks they match).
+- **Mark guesses** about the platform (datastore names, paths) with `# ASSUMPTION:`.
 - Scripts read inputs from paths and write outputs to paths (`argparse`), so they
   run the same locally and in Azure ML. Settings go in `config.yml`, not in code.
 - Ask before adding a dependency; pin its version in `requirements.txt`.
