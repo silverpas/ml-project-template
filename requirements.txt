@@ -1,0 +1,14 @@
+# Python 3.11. Exact versions so every run (local, CI, Azure ML) uses the same packages.
+# On macOS, LightGBM also needs: brew install libomp
+
+# Pipeline
+pandas==3.1.1
+pyarrow==26.0.1        # read/write Parquet files
+pyyaml==6.0.3          # read config.yml
+scikit-learn==1.9.1
+lightgbm==4.7.0
+mlflow==3.18.0
+
+# Development
+pytest==9.2.0
+ruff==0.17.5

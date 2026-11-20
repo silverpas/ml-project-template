@@ -1,0 +1,50 @@
+# Pipeline settings. Every script reads this file; any value can also be
+# overridden with a command-line argument (see `python -m src.<script> --help`).
+#
+# EXAMPLE USE CASE: AI4I 2020 Predictive Maintenance (public UCI dataset, id 601).
+# For a new use case, change the `data` and `model` sections.
+
+data:
+  # Where to download the raw data from (only used if raw_file does not exist yet).
+  source_url: https://archive.ics.uci.edu/static/public/601/ai4i+2020+predictive+maintenance+dataset.zip
+  raw_file: data/raw/ai4i2020.csv
+  # Column we want to predict (name after cleaning, see src/prep.py).
+  target: machine_failure
+  # Columns we never use as features:
+  # - IDs carry no signal;
+  # - twf, hdf, pwf, osf, rnf are the failure *reasons*: they are only known
+  #   after a failure happened, so using them would "leak" the answer.
+  drop_columns: [udi, product_id, twf, hdf, pwf, osf, rnf]
+  # Text columns the model must encode as categories.
+  categorical_columns: [type]
+
+split:
+  test_size: 0.2
+  seed: 42
+
+model:
+  # Name in the MLflow model registry.
+  name: ai4i-failure
+  # LightGBM settings (passed straight to lightgbm.LGBMClassifier).
+  params:
+    n_estimators: 200
+    learning_rate: 0.05
+    num_leaves: 31
+    class_weight: balanced   # failures are rare (~3%), so weight them up
+    random_state: 42
+    verbose: -1
+
+evaluation:
+  # Metric used to decide if a new model beats the current one.
+  # average_precision (= PR-AUC) works well when the positive class is rare.
+  primary_metric: average_precision
+  # The new model must beat the current one by at least this much.
+  min_improvement: 0.0
+  # Probability above which we predict "failure".
+  threshold: 0.5
+
+mlflow:
+  # Local mode: a SQLite file for runs and registry, model files in ./mlruns.
+  # In Azure ML the MLFLOW_TRACKING_URI environment variable overrides this.
+  tracking_uri: sqlite:///mlflow.db
+  experiment: ai4i-failure

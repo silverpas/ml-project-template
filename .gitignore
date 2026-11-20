@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.ipynb_checkpoints/
+
+# --- Virtual environments and local settings ---
+.venv/
+venv/
+.env
+.env.*
+CLAUDE.local.md
+
+# --- MLflow (local tracking) ---
+mlruns/
+mlartifacts/
+mlflow.db
+
+# --- Local data and pipeline outputs (never commit data) ---
+data/
+outputs/
+
+# --- OS / editor ---
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,41 @@
+# CI = "continuous integration": the automatic checker.
+# On every push and pull request, GitHub runs the same checks you can run
+# by hand, and shows a green check or a red cross next to the commit.
+# Needs no Azure and no secrets. (Terraform is not here: infrastructure
+# lives in the platform team's repo.)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# This workflow only reads the code.
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v7
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip # reuse downloaded packages between runs (faster)
+
+      - name: Install packages
+        run: pip install -r requirements.txt
+
+      - name: Check code style (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run tests (pytest)
+        run: pytest
