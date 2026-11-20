@@ -68,7 +68,8 @@ that writes to the predictions lakehouse in Fabric. The notebook in
 
 **Demo:** `demo-local-flow.yml` runs train → approval → score on GitHub's own
 computers with no Azure. It shows the approval gate (environment
-`approval-demo`). It is **not** the production pipeline; delete it once Azure works.
+`approval-demo`). It runs only when started by hand ("Run workflow" on the
+Actions tab). It is **not** the production pipeline; delete it once Azure works.
 
 ## Commands
 

@@ -11,7 +11,7 @@ repo's **Actions** tab.
 | `deploy.yml` | *coming in milestone 3* | Approval gate (`production` environment), then promotes the model | Yes |
 | `score.yml` | *coming in milestone 3*, nightly | Submits `jobs/batch-score.yml` to Azure ML; predictions go to the Fabric lakehouse | Yes |
 | `review-reminder.yml` | *coming in milestone 3*, quarterly | Opens an issue: "review this model: keep, retrain or retire?" | No |
-| `demo-local-flow.yml` | "Run workflow" button, or a push to `src/`, `config.yml`, `requirements.txt` | **Demo only.** The whole flow on GitHub's computers: train → approval → score | No |
+| `demo-local-flow.yml` | Only the "Run workflow" button (manual) | **Demo only.** The whole flow on GitHub's computers: train → approval → score | No |
 
 ## The approval gate
 

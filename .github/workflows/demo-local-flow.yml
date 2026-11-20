@@ -14,20 +14,14 @@
 # The Azure version (train.yml + deploy.yml, coming later) has the same steps;
 # it only runs the work in Azure ML and writes predictions to Fabric.
 #
-# Start it from the Actions tab ("Run workflow"), or push a change to the code
-# or settings. Tip: change a model setting in config.yml and see whether the
-# new model beats the champion.
+# Manual only: start it from the Actions tab ("Run workflow"). Pushes run only
+# ci.yml, so the demo never runs by surprise. Tip: change a model setting in
+# config.yml, push, run the demo and see whether the new model beats the champion.
 
 name: Demo flow (no Azure, not production)
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "config.yml"
-      - "requirements.txt"
+  workflow_dispatch:   # the "Run workflow" button on the Actions tab
 
 # One demo run at a time, because runs share the model registry (see below).
 concurrency:
