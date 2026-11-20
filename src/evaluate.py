@@ -30,6 +30,16 @@ from sklearn.metrics import (
 from src.common import load_config, read_json, setup_mlflow, write_json
 
 CHAMPION_ALIAS = "champion"
+# The metrics compute_metrics returns; evaluation.primary_metric must be one of them.
+METRIC_NAMES = ["average_precision", "roc_auc", "f1", "precision", "recall"]
+
+
+def check_primary_metric(metric: str) -> None:
+    """Fail early with a clear message if the config names a metric we do not compute."""
+    if metric not in METRIC_NAMES:
+        raise ValueError(
+            f"evaluation.primary_metric '{metric}' is not supported. Choose one of: {METRIC_NAMES}"
+        )
 
 
 def compute_metrics(y_true: pd.Series, y_proba: Any, threshold: float) -> dict[str, float]:
@@ -104,6 +114,7 @@ def main(argv: list[str] | None = None) -> None:
     config = load_config(args.config)
     eval_cfg = config["evaluation"]
     metric = eval_cfg["primary_metric"]
+    check_primary_metric(metric)
     run_info = read_json(args.run_info)
 
     test_df = pd.read_parquet(Path(args.data) / "test.parquet")

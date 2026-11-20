@@ -42,7 +42,7 @@ python -m src.train         # train a model
 python -m src.evaluate      # compare it with the approved model
 python -m src.register      # register it as "candidate" if it is better
 python -m src.register --promote 1     # approve version 1 as "champion"
-python -m src.score --input data/raw/ai4i2020.csv --output outputs/predictions.parquet
+python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
 
 pytest                      # run the tests
 ruff check . && ruff format --check .   # check code style
@@ -79,7 +79,8 @@ To see a second model compete, change a setting under `model.params` in
 | `notebooks/` | Optional: scoring inside Fabric instead of Azure ML | *coming in milestone 3* |
 | `model-card.md` | Owner, purpose, data version, metrics, approvals | *coming in milestone 3* |
 
-Created locally and never committed: `data/`, `outputs/`, `mlflow.db`, `mlruns/`, `.venv/`.
+Created locally and never committed: `data/` (including `data/predictions/`, the local
+stand-in for the predictions lakehouse), `outputs/`, `mlflow.db`, `mlruns/`, `.venv/`.
 
 ## Start a new use case
 

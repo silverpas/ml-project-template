@@ -23,8 +23,9 @@ split:
   seed: 42
 
 model:
-  # Name in the MLflow model registry.
-  name: ai4i-failure
+  # Name in the MLflow model registry. Use the use-case name, so the model,
+  # repo (ml-<name>), Terraform block and OneLake folder all match.
+  name: tool-wear
   # LightGBM settings (passed straight to lightgbm.LGBMClassifier).
   params:
     n_estimators: 200
@@ -35,8 +36,10 @@ model:
     verbose: -1
 
 evaluation:
-  # Metric used to decide if a new model beats the current one.
-  # average_precision (= PR-AUC) works well when the positive class is rare.
+  # Metric used to decide if a new model beats the current one. Must be one of:
+  # average_precision, roc_auc, f1, precision, recall (see src/evaluate.py).
+  # average_precision (= PR-AUC) works well when the positive class is rare;
+  # never use accuracy here (a model that never predicts a failure is 97% accurate).
   primary_metric: average_precision
   # The new model must beat the current one by at least this much.
   min_improvement: 0.0
@@ -47,4 +50,4 @@ mlflow:
   # Local mode: a SQLite file for runs and registry, model files in ./mlruns.
   # In Azure ML the MLFLOW_TRACKING_URI environment variable overrides this.
   tracking_uri: sqlite:///mlflow.db
-  experiment: ai4i-failure
+  experiment: tool-wear

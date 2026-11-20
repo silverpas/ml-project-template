@@ -45,13 +45,16 @@ environment/        conda.yml: packages for the Azure ML jobs   (milestone 3)
 notebooks/          fabric_batch_score.ipynb: OPTIONAL option A   (milestone 3)
 model-card.md       owner, purpose, data version, metrics, approvals   (milestone 3)
 data/, outputs/, mlflow.db, mlruns/   local only, never committed
+                    (data/predictions/ = local stand-in for the predictions lakehouse)
 ```
 
 ## Workflow for users
 
-1. In `config.yml`, set your data source, target column, columns to drop and model name.
+1. In `config.yml`, set your data source, target column, columns to drop and model
+   name (= the use-case name, e.g. `tool-wear`).
 2. Adapt `src/prep.py` only if your data needs different cleaning.
-3. Change the fake data in `tests/conftest.py` to your columns.
+3. Change the fake data in `tests/conftest.py` to your columns, and the column
+   lists in `tests/test_rules.py` to your leaking and ID columns.
 4. Run the pipeline locally (commands below) until tests pass and metrics make sense.
 5. Push to `main`. CI checks the code. In Azure (milestone 3), `train.yml`
    trains and evaluates; if the new model is better it becomes `candidate`.
@@ -77,7 +80,7 @@ python -m src.train
 python -m src.evaluate                       # writes outputs/evaluation.json and .md
 python -m src.register                       # registers as "candidate" if better
 python -m src.register --promote <version>   # human approval: set "champion"
-python -m src.score --input data/raw/ai4i2020.csv --output outputs/predictions.parquet
+python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
 pytest
 ruff check . && ruff format --check .
 mlflow ui --backend-store-uri sqlite:///mlflow.db --port 8080
@@ -100,8 +103,9 @@ resources and gives you these IDs; store them as **GitHub variables** (not secre
 - **Azure ML SDK v2 / CLI v2 only** (`azure-ai-ml`, YAML job specs). Never SDK v1 (`azureml-core`).
 - **No leaking features**: never use IDs or the failure-reason columns
   (TWF, HDF, PWF, OSF, RNF) as inputs; they are only known after a failure.
+  `tests/test_rules.py` fails if `config.yml` stops dropping them.
 - **Not only accuracy**: failures are rare, so report recall, precision, F1 and
-  PR-AUC. PR-AUC (`average_precision`) decides if a model is better.
+  PR-AUC. PR-AUC (`average_precision`) decides if a model is better; never accuracy.
 - **Compare fairly**: `evaluate.py` compares the new model with the approved one
   on the same test set. Do not skip it.
 - **Never promote without approval**: `champion` is set only after a reviewer approves.

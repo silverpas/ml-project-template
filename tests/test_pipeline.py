@@ -28,6 +28,11 @@ def test_full_pipeline(config_path: Path):
     register.main(["--config", config])
     assert read_json("outputs/registration.json")["version"] == "1"
 
+    # The registered model's inputs contain no leaking or ID columns.
+    model_inputs = set(score.expected_columns(first["model_uri"]))
+    assert not model_inputs & {"twf", "hdf", "pwf", "osf", "rnf", "udi", "product_id"}
+    assert "machine_failure" not in model_inputs
+
     # Human approval: promote version 1 to champion.
     register.main(["--config", config, "--promote", "1"])
 
@@ -38,8 +43,8 @@ def test_full_pipeline(config_path: Path):
 
     # Score the raw file with the champion.
     raw_file = str(Path(config_path).parent / "raw.csv")
-    score.main(["--config", config, "--input", raw_file, "--output", "outputs/pred.csv"])
-    predictions = pd.read_csv("outputs/pred.csv")
+    score.main(["--config", config, "--input", raw_file, "--output", "data/predictions/pred.csv"])
+    predictions = pd.read_csv("data/predictions/pred.csv")
     assert len(predictions) == 400
     assert predictions["failure_probability"].between(0, 1).all()
     assert set(predictions["predicted_failure"]) <= {0, 1}

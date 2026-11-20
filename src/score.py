@@ -1,12 +1,15 @@
 """Step 5: batch scoring. Use a registered model to predict on new data.
 
 Usage:
-    python -m src.score --input data/raw/ai4i2020.csv --output outputs/predictions.parquet
+    python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
 
 By default it uses the approved model (models:/<name>@champion). Pass --model to
-use another one, e.g. models:/ai4i-failure@candidate or models:/ai4i-failure/2.
+use another one, e.g. models:/tool-wear@candidate or models:/tool-wear/2.
 The output has the input rows plus failure_probability, predicted_failure,
 model_uri and scored_at.
+
+Locally, predictions go to data/predictions/ (git-ignored). It stands in for
+the predictions lakehouse in Fabric, where the Azure ML batch job writes them.
 """
 
 from __future__ import annotations
@@ -64,7 +67,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model", help="MLflow model URI (default: the champion)")
     parser.add_argument("--input", required=True, help="CSV or Parquet file to score")
     parser.add_argument(
-        "--output", default="outputs/predictions.parquet", help="CSV or Parquet file to write"
+        "--output",
+        default="data/predictions/predictions.parquet",
+        help="CSV or Parquet file to write",
     )
     return parser.parse_args(argv)
 

@@ -140,7 +140,7 @@ jobs:
 
       # In real use you would score NEW data; the demo re-uses the dataset.
       - name: Score with the champion
-        run: python -m src.score --input data/raw/ai4i2020.csv --output outputs/predictions.csv
+        run: python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.csv
 
       - name: Show the result on the run page
         run: |
@@ -155,7 +155,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: predictions
-          path: outputs/predictions.csv
+          path: data/predictions/predictions.csv
           retention-days: 7
 
       # Save the registry with the new champion for the next run.
