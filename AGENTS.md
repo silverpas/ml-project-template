@@ -21,6 +21,7 @@ Jargon in one line each:
   "better, waiting for approval" / "approved, in use" / "replaced" (`src/registry.py`).
 - **Datastore**: Azure ML's named shortcut to a storage place, e.g. a OneLake lakehouse.
 - **Delta table**: Parquet files plus a log of versions; how Fabric stores tables.
+- **Gold table**: the clean, ready-to-use data layer in Fabric; tables written by ML start with `ml_`.
 - **OIDC**: GitHub logs in to Azure without a stored password.
 
 ## Where this repo sits in the overall process
@@ -39,7 +40,8 @@ Jargon in one line each:
 ```
 config.yml          all settings (data, target, columns to drop, model, metric,
                     predictions_table)
-src/                prep.py, train.py, evaluate.py, register.py, score.py, common.py
+src/                prep.py, train.py, evaluate.py, register.py, score.py,
+                    registry.py (status tags), common.py (shared helpers)
 tests/              pytest checks on small fake data
 .github/workflows/  ci.yml, train.yml, deploy.yml, score.yml, review-reminder.yml,
                     demo-local-flow.yml (demo only)
@@ -47,6 +49,8 @@ jobs/               train-register.yml, batch-score.yml   (Azure ML CLI v2 job s
 environment/        conda.yml: packages for the Azure ML jobs (same versions as requirements.txt)
 notebooks/          fabric_batch_score.ipynb: OPTIONAL option A (PREDICT in Fabric)
 model-card.md       owner, purpose, data version, metrics, approvals
+requirements.txt    pinned packages; pyproject.toml: ruff settings
+*/README.md         short guides inside src/, tests/ and .github/workflows/
 data/, outputs/, mlflow.db, mlruns/   local only, never committed
                     (data/predictions/<predictions_table>/ = local stand-in for the Gold table)
 ```
@@ -61,7 +65,8 @@ data/, outputs/, mlflow.db, mlruns/   local only, never committed
    lists in `tests/test_rules.py` to your leaking and ID columns.
 4. Run the pipeline locally (commands below) until tests pass and metrics make sense.
 5. Fill in `model-card.md`. In `jobs/*.yml`, check every `# ASSUMPTION:` line
-   (datastore names, data paths, compute) with the platform team.
+   (datastore names, data paths, the Gold table's OneLake address, compute)
+   with the platform team.
 6. Push to `main`: CI checks the code. Run **Train** (`train.yml`): Azure ML
    trains and evaluates; if the new model is better it becomes `candidate`.
 7. Run **Deploy** (`deploy.yml`) with that version: a reviewer approves in
@@ -105,7 +110,9 @@ resources and gives you these IDs; store them as **GitHub variables** (not secre
 `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
 `AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`. Without them the Azure workflows
 are skipped, so a new repo stays green. Also create the `production` environment
-with the reviewers as required reviewers.
+with the reviewers as required reviewers. The platform team also grants the
+project's identity read access to the input data and write access to the Gold
+table in Fabric.
 
 ## Rules (what not to do)
 
