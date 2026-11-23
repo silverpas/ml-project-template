@@ -16,4 +16,5 @@ dependencies:
       - scikit-learn==1.9.1
       - lightgbm==4.7.0
       - mlflow==3.18.0
+      - deltalake==1.7.0
       - azureml-mlflow==1.62.0.post7

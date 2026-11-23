@@ -11,7 +11,7 @@ Azure ML job.
 | `evaluate.py` | Compare the new model with the approved one on the same test set | `data/processed/test.parquet` | `outputs/evaluation.json` |
 | `register.py` | Register a better model as `candidate`; `--promote N` approves it as `champion` | `outputs/evaluation.json` | MLflow model registry |
 | `registry.py` | Helper: the `status` tag (candidate, champion, archived) on model versions | | |
-| `score.py` | Predict on new data with the approved model | any CSV or Parquet file | `data/predictions/predictions.parquet` |
+| `score.py` | Predict on new data with the approved model | any CSV or Parquet file | Delta table `data/predictions/ml_tool_wear_predictions/` (in Azure: the Gold table) |
 | `common.py` | Shared helpers: read config, set up MLflow, git commit, file fingerprint | | |
 
 Run any step with `python -m src.<step>`. Add `--help` to see its options.

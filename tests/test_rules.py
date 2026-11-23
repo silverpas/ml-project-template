@@ -3,16 +3,19 @@
 These tests read the REAL config.yml, so a risky settings change fails CI.
 """
 
+import re
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 
 from src.common import load_config
 from src.evaluate import METRIC_NAMES, check_primary_metric, compute_metrics
 
-CONFIG = load_config(Path(__file__).parents[1] / "config.yml")
+ROOT = Path(__file__).parents[1]
+CONFIG = load_config(ROOT / "config.yml")
 
 # Known only AFTER a failure happened: using them as inputs leaks the answer.
 LEAKING_COLUMNS = {"twf", "hdf", "pwf", "osf", "rnf"}
@@ -44,3 +47,14 @@ def test_metric_names_match_compute_metrics():
 def test_unknown_primary_metric_fails_clearly():
     with pytest.raises(ValueError, match="pr_auc"):
         check_primary_metric("pr_auc")
+
+
+def test_predictions_table_follows_the_gold_naming_rule():
+    """Gold tables written by ML start with `ml_` (lowercase, digits, underscores)."""
+    assert re.fullmatch(r"ml_[a-z0-9_]+", CONFIG["scoring"]["predictions_table"])
+
+
+def test_batch_score_job_writes_to_the_configured_table():
+    job = yaml.safe_load((ROOT / "jobs" / "batch-score.yml").read_text())
+    table_address = job["inputs"]["predictions_table"]
+    assert table_address.endswith(f"/Tables/{CONFIG['scoring']['predictions_table']}")

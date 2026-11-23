@@ -1,6 +1,6 @@
 # Nightly scoring in Azure ML (design option B, the default): submits
 # jobs/batch-score.yml, which scores new data with the champion model and
-# writes the predictions to the predictions lakehouse in Fabric.
+# writes the predictions to the Gold table in Fabric (scoring.predictions_table).
 
 name: Score (nightly, Azure ML)
 
@@ -40,4 +40,4 @@ jobs:
           az ml job stream --name "$job"
           status=$(az ml job show --name "$job" --query status --output tsv)
           if [ "$status" != "Completed" ]; then echo "Job ended with status $status"; exit 1; fi
-          echo "Scored with job \`$job\`; predictions written to the predictions lakehouse." >> "$GITHUB_STEP_SUMMARY"
+          echo "Scored with job \`$job\`; predictions written to the Gold table." >> "$GITHUB_STEP_SUMMARY"

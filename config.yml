@@ -46,6 +46,12 @@ evaluation:
   # Probability above which we predict "failure".
   threshold: 0.5
 
+scoring:
+  # Gold table for the predictions in Fabric. Starts with `ml_` (platform naming
+  # rule) and must match `predictions_table` in this use case's registry file.
+  # Locally the table is written to data/predictions/<this name>/.
+  predictions_table: ml_tool_wear_predictions
+
 mlflow:
   # Local mode: a SQLite file for runs and registry, model files in ./mlruns.
   # In Azure ML the MLFLOW_TRACKING_URI environment variable overrides this.

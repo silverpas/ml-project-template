@@ -42,7 +42,7 @@ python -m src.train         # train a model
 python -m src.evaluate      # compare it with the approved model
 python -m src.register      # register it as "candidate" if it is better
 python -m src.register --promote 1     # approve version 1 as "champion"
-python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
+python -m src.score --input data/raw/ai4i2020.csv   # -> data/predictions/ml_tool_wear_predictions/
 
 pytest                      # run the tests
 ruff check . && ruff format --check .   # check code style
@@ -77,7 +77,8 @@ variables and created the `production` environment:
 2. *Actions* → **Deploy (approval gate)** → Run workflow with that version.
    A reviewer approves; the version becomes champion.
 3. **Score (nightly)** then runs every night and writes predictions to the
-   predictions lakehouse. **Review reminder** opens an issue every quarter.
+   Gold table `ml_tool_wear_predictions` in Fabric. **Review reminder** opens an
+   issue every quarter.
 
 Before the first run, check every `# ASSUMPTION:` line in `jobs/*.yml` with the
 platform team (datastore names, data paths, compute name).
@@ -97,7 +98,7 @@ platform team (datastore names, data paths, compute name).
 | `model-card.md` | Owner, purpose, data version, metrics, approvals | **Yes**, fill it in |
 
 Created locally and never committed: `data/` (including `data/predictions/`, the local
-stand-in for the predictions lakehouse), `outputs/`, `mlflow.db`, `mlruns/`, `.venv/`.
+stand-in for the Gold predictions table), `outputs/`, `mlflow.db`, `mlruns/`, `.venv/`.
 
 ## Start a new use case
 

@@ -20,6 +20,7 @@ Jargon in one line each:
 - **Status tag** `candidate` / `champion` / `archived`: label on a model version:
   "better, waiting for approval" / "approved, in use" / "replaced" (`src/registry.py`).
 - **Datastore**: Azure ML's named shortcut to a storage place, e.g. a OneLake lakehouse.
+- **Delta table**: Parquet files plus a log of versions; how Fabric stores tables.
 - **OIDC**: GitHub logs in to Azure without a stored password.
 
 ## Where this repo sits in the overall process
@@ -36,7 +37,8 @@ Jargon in one line each:
 ## Folder structure
 
 ```
-config.yml          all settings (data, target, columns to drop, model, metric)
+config.yml          all settings (data, target, columns to drop, model, metric,
+                    predictions_table)
 src/                prep.py, train.py, evaluate.py, register.py, score.py, common.py
 tests/              pytest checks on small fake data
 .github/workflows/  ci.yml, train.yml, deploy.yml, score.yml, review-reminder.yml,
@@ -46,13 +48,14 @@ environment/        conda.yml: packages for the Azure ML jobs (same versions as 
 notebooks/          fabric_batch_score.ipynb: OPTIONAL option A (PREDICT in Fabric)
 model-card.md       owner, purpose, data version, metrics, approvals
 data/, outputs/, mlflow.db, mlruns/   local only, never committed
-                    (data/predictions/ = local stand-in for the predictions lakehouse)
+                    (data/predictions/<predictions_table>/ = local stand-in for the Gold table)
 ```
 
 ## Workflow for users
 
-1. In `config.yml`, set your data source, target column, columns to drop and model
-   name (= the use-case name, e.g. `tool-wear`).
+1. In `config.yml`, set your data source, target column, columns to drop, model
+   name (= the use-case name, e.g. `tool-wear`) and `predictions_table`
+   (= the one in your registry file, e.g. `ml_tool_wear_predictions`).
 2. Adapt `src/prep.py` only if your data needs different cleaning.
 3. Change the fake data in `tests/conftest.py` to your columns, and the column
    lists in `tests/test_rules.py` to your leaking and ID columns.
@@ -63,12 +66,13 @@ data/, outputs/, mlflow.db, mlruns/   local only, never committed
    trains and evaluates; if the new model is better it becomes `candidate`.
 7. Run **Deploy** (`deploy.yml`) with that version: a reviewer approves in
    GitHub (`production` environment) → `champion`. Add a row to `model-card.md`.
-8. `score.yml` scores every night with the champion and writes predictions.
+8. `score.yml` scores every night with the champion and replaces the rows of the Gold table.
 9. Every quarter `review-reminder.yml` opens an issue: keep, retrain or retire?
 
 **Scoring:** the default is an **Azure ML batch job** (`jobs/batch-score.yml`)
-that writes to the predictions lakehouse in Fabric. The notebook in
-`notebooks/` (scoring inside Fabric with PREDICT) is an optional alternative.
+that writes the predictions as a **Delta table** (Fabric's table format) into
+the Gold lakehouse, e.g. `ml_tool_wear_predictions`; Power BI reads it directly.
+The notebook in `notebooks/` (scoring inside Fabric with PREDICT) is optional.
 
 **Demo:** `demo-local-flow.yml` runs train → approval → score on GitHub's own
 computers with no Azure. It shows the approval gate (environment
@@ -86,7 +90,7 @@ python -m src.evaluate                       # writes outputs/evaluation.json an
 python -m src.register                       # registers as "candidate" if better
 python -m src.register --promote <version>   # human approval: set "champion"
 az ml job create --file jobs/train-register.yml   # same steps in Azure ML (after az login)
-python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
+python -m src.score --input data/raw/ai4i2020.csv   # -> data/predictions/ml_tool_wear_predictions/
 pytest
 ruff check . && ruff format --check .
 mlflow ui --backend-store-uri sqlite:///mlflow.db --port 8080
@@ -120,6 +124,8 @@ with the reviewers as required reviewers.
 - **Every training run logs** parameters, metrics, the data version and the git commit.
 - **Same packages everywhere**: a version change goes in `requirements.txt` AND
   `environment/conda.yml` (`tests/test_azure_files.py` checks they match).
+- **Predictions go to an `ml_` Gold table**; `tests/test_rules.py` checks the name
+  and that `jobs/batch-score.yml` writes to the same table.
 - **Mark guesses** about the platform (datastore names, paths) with `# ASSUMPTION:`.
 - Scripts read inputs from paths and write outputs to paths (`argparse`), so they
   run the same locally and in Azure ML. Settings go in `config.yml`, not in code.

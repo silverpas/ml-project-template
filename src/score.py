@@ -1,15 +1,21 @@
 """Step 5: batch scoring. Use a registered model to predict on new data.
 
 Usage:
-    python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.parquet
+    python -m src.score --input data/raw/ai4i2020.csv
 
 By default it uses the approved model (the version tagged status=champion).
 Pass --model to use another one, e.g. models:/tool-wear/2.
 The output has the input rows plus failure_probability, predicted_failure,
 model_uri and scored_at.
 
-Locally, predictions go to data/predictions/ (git-ignored). It stands in for
-the predictions lakehouse in Fabric, where the Azure ML batch job writes them.
+Where the predictions go (--output):
+- default: a Delta table in data/predictions/<predictions_table>/ (git-ignored),
+  the local stand-in for the Gold table in Fabric;
+- in Azure ML: the Gold table itself, as an abfss://...onelake... address;
+- a path ending in .csv or .parquet: a plain file (handy to open in Excel).
+
+Delta is the table format Fabric uses: Parquet files plus a log of versions.
+Each run replaces the table's rows; older versions stay readable (time travel).
 """
 
 from __future__ import annotations
@@ -20,6 +26,7 @@ from pathlib import Path
 
 import mlflow
 import pandas as pd
+from deltalake import write_deltalake
 
 from src.common import load_config, setup_mlflow
 from src.prep import clean_columns
@@ -52,13 +59,28 @@ def score(df: pd.DataFrame, model_uri: str, threshold: float) -> pd.DataFrame:
     return result
 
 
-def write_table(df: pd.DataFrame, path: Path) -> None:
-    """Write a CSV or Parquet file, creating the folder if needed."""
+def is_onelake(output: str) -> bool:
+    return output.startswith("abfss://")
+
+
+def write_predictions(df: pd.DataFrame, output: str) -> None:
+    """Write a CSV or Parquet file, or (any other path) replace a Delta table."""
+    if is_onelake(output):
+        # ASSUMPTION: the job runs as this project's identity (ml-project module),
+        # which has write access to the Gold lakehouse in Fabric.
+        write_deltalake(
+            output, df, mode="overwrite", storage_options={"use_fabric_endpoint": "true"}
+        )
+        return
+
+    path = Path(output)
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.suffix == ".parquet":
         df.to_parquet(path, index=False)
-    else:
+    elif path.suffix == ".csv":
         df.to_csv(path, index=False)
+    else:
+        write_deltalake(path, df, mode="overwrite")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -68,8 +90,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--input", required=True, help="CSV or Parquet file to score")
     parser.add_argument(
         "--output",
-        default="data/predictions/predictions.parquet",
-        help="CSV or Parquet file to write",
+        help="Delta table folder or abfss:// address, or a .csv/.parquet file "
+        "(default: data/predictions/<predictions_table>)",
     )
     return parser.parse_args(argv)
 
@@ -79,11 +101,12 @@ def main(argv: list[str] | None = None) -> None:
     config = load_config(args.config)
     setup_mlflow(config)
     model_uri = args.model or champion_uri(config["model"]["name"])
+    output = args.output or f"data/predictions/{config['scoring']['predictions_table']}"
 
     predictions = score(read_table(Path(args.input)), model_uri, config["evaluation"]["threshold"])
-    write_table(predictions, Path(args.output))
+    write_predictions(predictions, output)
     print(
-        f"Scored {len(predictions)} rows with {model_uri} -> {args.output} "
+        f"Scored {len(predictions)} rows with {model_uri} -> {output} "
         f"({predictions['predicted_failure'].sum()} predicted failures)"
     )
 

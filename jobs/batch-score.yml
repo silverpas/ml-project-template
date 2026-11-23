@@ -1,6 +1,7 @@
 # Azure ML job: score new data with the approved (champion) model and write
-# the predictions to the predictions lakehouse in Fabric. Default scoring path
-# (design option B).
+# the predictions to the Gold table in Fabric (config.yml:
+# scoring.predictions_table, e.g. ml_tool_wear_predictions). Default scoring
+# path (design option B).
 #
 # Submitted every night by .github/workflows/score.yml, or by hand:
 #   az ml job create --file jobs/batch-score.yml
@@ -17,7 +18,7 @@ code: ../
 command: >-
   python -m src.score
   --input ${{inputs.input_data}}
-  --output ${{outputs.predictions}}/predictions.parquet
+  --output ${{inputs.predictions_table}}
 
 inputs:
   input_data:
@@ -27,15 +28,15 @@ inputs:
     path: azureml://datastores/onelake_manufacturing/paths/Files/ml/tool-wear/to-score/latest.csv
     mode: download
 
-outputs:
-  predictions:
-    type: uri_folder
-    # ASSUMPTION: the platform team registers the predictions lakehouse as a
-    # datastore called "onelake_predictions", and the ml-project module gives
-    # this project's identity write access to it. Each night overwrites
-    # latest/predictions.parquet; Power BI reads it through the lakehouse.
-    path: azureml://datastores/onelake_predictions/paths/Files/predictions/tool-wear/latest/
-    mode: rw_mount
+  # The Gold table, written as a Delta table (Fabric's table format), so it
+  # shows up in the lakehouse's Tables and Power BI can read it right away.
+  # Each night replaces the rows; Delta keeps older versions (time travel).
+  # Written directly to OneLake (abfss://), not through a datastore: Azure ML's
+  # OneLake datastores only reach the Files folder, not Tables.
+  # ASSUMPTION: Fabric workspace "manufacturing" with a lakehouse "gold"; the
+  # ml-project module's identity gets write access to it (data_access_todo).
+  # The last part must be config.yml's predictions_table.
+  predictions_table: abfss://manufacturing@onelake.dfs.fabric.microsoft.com/gold.Lakehouse/Tables/ml_tool_wear_predictions
 
 environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
