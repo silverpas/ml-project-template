@@ -39,10 +39,10 @@ Jargon in one line each:
 
 ```
 config.yml          all settings (data, target, columns to drop, model, metric,
-                    predictions_table)
+                    predictions_table, cost: machine type and price per hour)
 src/                prep.py, train.py, evaluate.py, register.py, export.py, score.py,
-                    data.py (the ONE place that reads data), registry.py
-                    (status tags), common.py (shared helpers)
+                    data.py (the ONE place that reads data), cost.py (estimated
+                    cost per job), registry.py (status tags), common.py (helpers)
 tests/              pytest checks on small fake data
 .github/workflows/  ci.yml, train.yml, deploy.yml, score.yml, review-reminder.yml,
                     demo-local-flow.yml (demo only)
@@ -132,7 +132,8 @@ table in Fabric.
   on the same test set. Do not skip it.
 - **Never promote without approval**: `champion` is set only after a reviewer approves.
   Only approved versions can be exported (`src/export.py` refuses the others).
-- **Every training run logs** parameters, metrics, the data version and the git commit.
+- **Every training run logs** parameters, metrics, the data version and the git commit;
+  every Azure ML job also logs `job_minutes` and `estimated_cost` (`src/cost.py`).
 - **Read data only through `src/data.py`** (`read_data`), so a new source is one change.
 - **Same packages everywhere**: a version change goes in `requirements.txt` AND
   `environment/conda.yml` (`tests/test_azure_files.py` checks they match).

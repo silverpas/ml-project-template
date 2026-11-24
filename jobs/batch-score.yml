@@ -15,10 +15,13 @@ experiment_name: tool-wear-scoring
 
 code: ../
 
+# src.cost start/end: the job's duration and estimated cost, logged to MLflow.
 command: >-
+  python -m src.cost start &&
   python -m src.score
   --input ${{inputs.input_data}}
-  --output ${{inputs.predictions_table}}
+  --output ${{inputs.predictions_table}} &&
+  python -m src.cost end
 
 inputs:
   input_data:

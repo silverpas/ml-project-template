@@ -106,8 +106,9 @@ stand-in for the Gold predictions table), `outputs/`, `mlflow.db`, `mlruns/`, `.
 1. Your request is approved (via the ML requests process) and the platform
    team has set up Azure for your use case.
 2. Create a repo from this template ("Use this template" on GitHub).
-3. In `config.yml`, change the `data` section (source, target, columns to drop)
-   and `model.name`.
+3. In `config.yml`, change the `data` section (source, target, columns to drop),
+   `model.name`, and in `cost` your cluster's machine type and price per hour
+   (every Azure ML job logs its estimated cost to MLflow).
 4. If your data needs other cleaning, adapt `prepare` in `src/prep.py`. Reading
    the data (file or Delta table) happens in `src/data.py`.
 5. Change the fake data in `tests/conftest.py` to your columns.

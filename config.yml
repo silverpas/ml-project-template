@@ -54,6 +54,18 @@ scoring:
   # Locally the table is written to data/predictions/<this name>/.
   predictions_table: ml_tool_wear_predictions
 
+cost:
+  # For the estimated cost per Azure ML job (src/cost.py); a guide, not the bill.
+  # ASSUMPTION: the machine type of your project's cluster (ml-project module).
+  vm_size: Standard_DS3_v2
+  # ASSUMPTION: a rough example. Look up the pay-as-you-go Linux price of vm_size
+  # for your region and currency on the Azure pricing page, and put it here.
+  price_per_hour: 0.30
+  currency: USD
+  # Billed minutes the job cannot see: the machine starting (~5) and staying on
+  # after the job until the cluster scales down (15, the cluster's idle time).
+  extra_minutes: 20
+
 mlflow:
   # Local mode: a SQLite file for runs and registry, model files in ./mlruns.
   # In Azure ML the MLFLOW_TRACKING_URI environment variable overrides this.

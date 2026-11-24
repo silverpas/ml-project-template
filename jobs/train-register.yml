@@ -14,11 +14,14 @@ experiment_name: tool-wear # same as mlflow.experiment in config.yml
 
 code: ../ # the whole repo (files listed in .gitignore are not uploaded)
 
+# src.cost start/end: the job's duration and estimated cost, logged to MLflow.
 command: >-
+  python -m src.cost start &&
   python -m src.prep --input ${{inputs.training_data}} &&
   python -m src.train &&
   python -m src.evaluate &&
-  python -m src.register
+  python -m src.register &&
+  python -m src.cost end
 
 inputs:
   training_data:
