@@ -1,7 +1,11 @@
 # Azure ML job: score new data with the approved (champion) model and write
-# the predictions to the Gold table in Fabric (config.yml:
-# scoring.predictions_table, e.g. ml_tool_wear_predictions). Default scoring
-# path (design option B).
+# the predictions as a Delta table called like config.yml's
+# scoring.predictions_table (ml_tool_wear_predictions). Default scoring path
+# (design option B).
+#
+# For now the table goes to the job's output folder (download it with
+# `az ml job download --name <job> --output-name predictions`). With the Fabric
+# connection (design section 9) it goes straight to the Gold lakehouse.
 #
 # Submitted every night by .github/workflows/score.yml, or by hand:
 #   az ml job create --file jobs/batch-score.yml
@@ -20,26 +24,25 @@ command: >-
   python -m src.cost start &&
   python -m src.score
   --input ${{inputs.input_data}}
-  --output ${{inputs.predictions_table}} &&
+  --output ${{outputs.predictions}}/ml_tool_wear_predictions &&
   python -m src.cost end
 
 inputs:
   input_data:
     type: uri_file
-    # ASSUMPTION: new rows to score are exported to this OneLake path
-    # (same datastore as the training data). Change it to yours.
-    path: azureml://datastores/onelake_manufacturing/paths/Files/ml/tool-wear/to-score/latest.csv
+    # A file on YOUR computer, uploaded with the job. The example scores the
+    # training file again; in real use these are NEW rows.
+    path: ../data/raw/ai4i2020.csv
     mode: download
 
-  # The Gold table, written as a Delta table (Fabric's table format), so it
-  # shows up in the lakehouse's Tables and Power BI can read it right away.
-  # Each night replaces the rows; Delta keeps older versions (time travel).
-  # Written directly to OneLake (abfss://), not through a datastore: Azure ML's
-  # OneLake datastores only reach the Files folder, not Tables.
-  # ASSUMPTION: Fabric workspace "manufacturing" with a lakehouse "gold"; the
-  # ml-project module's identity gets write access to it (data_access_todo).
-  # The last part must be config.yml's predictions_table.
-  predictions_table: abfss://manufacturing@onelake.dfs.fabric.microsoft.com/gold.Lakehouse/Tables/ml_tool_wear_predictions
+outputs:
+  # The predictions, as a Delta table (Fabric's table format) inside this folder.
+  # mode upload: written on the machine's disk, uploaded when the job ends.
+  # Later, with the Fabric connection, --output becomes the Gold table address:
+  # abfss://<workspace>@onelake.dfs.fabric.microsoft.com/<lakehouse>.Lakehouse/Tables/ml_tool_wear_predictions
+  predictions:
+    type: uri_folder
+    mode: upload
 
 environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest

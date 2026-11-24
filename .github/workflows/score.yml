@@ -1,6 +1,7 @@
 # Nightly scoring in Azure ML (design option B, the default): submits
 # jobs/batch-score.yml, which scores new data with the champion model and
-# writes the predictions to the Gold table in Fabric (scoring.predictions_table).
+# writes the predictions as a Delta table (scoring.predictions_table) to the
+# job's output; with the Fabric connection, to the Gold table in Fabric.
 
 name: Score (nightly, Azure ML)
 
@@ -34,10 +35,24 @@ jobs:
           az extension add --name ml --yes
           az configure --defaults group="${{ vars.AZURE_RESOURCE_GROUP }}" workspace="${{ vars.AZURE_ML_WORKSPACE }}"
 
+      # EXAMPLE DATA ONLY: the job uploads data/raw/ai4i2020.csv from this
+      # computer. With the Fabric connection (design section 9) the job reads
+      # the Gold table instead and this step goes away.
+      - name: Get the example data
+        run: |
+          python3 - <<'EOF'
+          import io, pathlib, urllib.request, zipfile
+          url = "https://archive.ics.uci.edu/static/public/601/ai4i+2020+predictive+maintenance+dataset.zip"
+          archive = zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(url).read()))
+          name = next(n for n in archive.namelist() if n.endswith(".csv"))
+          pathlib.Path("data/raw").mkdir(parents=True, exist_ok=True)
+          pathlib.Path("data/raw/ai4i2020.csv").write_bytes(archive.read(name))
+          EOF
+
       - name: Run the batch-score job in Azure ML
         run: |
           job=$(az ml job create --file jobs/batch-score.yml --query name --output tsv)
           az ml job stream --name "$job"
           status=$(az ml job show --name "$job" --query status --output tsv)
           if [ "$status" != "Completed" ]; then echo "Job ended with status $status"; exit 1; fi
-          echo "Scored with job \`$job\`; predictions written to the Gold table." >> "$GITHUB_STEP_SUMMARY"
+          echo "Scored with job \`$job\`; predictions in its output \`predictions\`." >> "$GITHUB_STEP_SUMMARY"

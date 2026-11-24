@@ -64,9 +64,11 @@ def test_conda_has_the_same_versions_as_requirements():
             assert in_azure.get(package) == version, f"{package}: {in_azure.get(package)}"
 
 
-def test_deploy_installs_the_same_azureml_mlflow():
+def test_laptop_and_jobs_use_the_same_azureml_mlflow():
+    azure = pins((ROOT / "requirements-azure.txt").read_text().splitlines())
+    assert azure["azureml-mlflow"] == conda_pins()["azureml-mlflow"]
     deploy = (ROOT / ".github" / "workflows" / "deploy.yml").read_text()
-    assert f"azureml-mlflow=={conda_pins()['azureml-mlflow']}" in deploy
+    assert "pip install -r requirements-azure.txt" in deploy
 
 
 @pytest.mark.parametrize("workflow_file", WORKFLOWS, ids=lambda p: p.name)

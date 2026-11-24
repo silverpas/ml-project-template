@@ -9,6 +9,7 @@ from deltalake import write_deltalake
 from src import prep
 from src.common import read_json
 from src.data import describe_source, read_data
+from src.score import write_predictions
 
 
 @pytest.mark.parametrize("kind", ["csv", "parquet", "delta"])
@@ -42,9 +43,12 @@ def test_describe_source_fingerprints_a_file(tmp_path: Path, raw_data):
     assert len(describe_source(source)["source_sha256"]) == 64
 
 
-def test_fabric_is_not_built_yet():
+def test_fabric_is_not_built_yet(raw_data):
+    table = "abfss://ws@onelake.dfs.fabric.microsoft.com/gold.Lakehouse/Tables/t"
     with pytest.raises(NotImplementedError, match="section 9"):
-        read_data("abfss://ws@onelake.dfs.fabric.microsoft.com/gold.Lakehouse/Tables/t")
+        read_data(table)
+    with pytest.raises(NotImplementedError, match="section 9"):
+        write_predictions(raw_data, table)
 
 
 def test_unknown_format_fails_clearly(tmp_path: Path):

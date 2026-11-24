@@ -1,0 +1,7 @@
+# Everything in requirements.txt, plus what your LAPTOP needs to work with
+# Azure ML (approve, export). The Azure ML jobs get the same through
+# environment/conda.yml. Only needed when you use Azure:
+#   pip install -r requirements-azure.txt
+-r requirements.txt
+
+azureml-mlflow==1.62.0.post7   # lets MLflow talk to the Azure ML workspace (runs, registry)

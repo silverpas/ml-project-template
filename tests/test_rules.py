@@ -56,5 +56,5 @@ def test_predictions_table_follows_the_gold_naming_rule():
 
 def test_batch_score_job_writes_to_the_configured_table():
     job = yaml.safe_load((ROOT / "jobs" / "batch-score.yml").read_text())
-    table_address = job["inputs"]["predictions_table"]
-    assert table_address.endswith(f"/Tables/{CONFIG['scoring']['predictions_table']}")
+    output = re.search(r"--output (\S+)", job["command"]).group(1)
+    assert output.endswith(f"/{CONFIG['scoring']['predictions_table']}")

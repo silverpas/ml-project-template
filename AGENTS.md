@@ -1,14 +1,11 @@
 # AGENTS.md: ML project template
 
-Instructions for the people who build a model in this repo, and for their AI
-coding agents. Read this before changing anything.
+For the people who build a model in this repo and their AI agents. Read first.
 
 ## What this repo is for
 
-One repo = one ML use case. It holds the code that turns data into an approved
-model and then into predictions:
-
-prepare data → train → evaluate → register → (human approval) → export → score.
+One repo = one ML use case: prepare data → train → evaluate → register →
+(human approval) → export → score.
 
 Everything runs **locally first** (laptop, local MLflow, local files) and then
 the same scripts run as **Azure ML jobs**. The example predicts machine
@@ -19,7 +16,6 @@ Jargon in one line each:
 - **Azure ML job**: a script that runs on a cloud computer instead of your laptop.
 - **Status tag** `candidate` / `champion` / `archived`: label on a model version:
   "better, waiting for approval" / "approved, in use" / "replaced" (`src/registry.py`).
-- **Datastore**: Azure ML's named shortcut to a storage place, e.g. a OneLake lakehouse.
 - **Delta table**: Parquet files plus a log of versions; how Fabric stores tables.
 - **Gold table**: the clean, ready-to-use data layer in Fabric; tables written by ML start with `ml_`.
 - **OIDC**: GitHub logs in to Azure without a stored password.
@@ -48,9 +44,11 @@ tests/              pytest checks on small fake data
                     demo-local-flow.yml (demo only)
 jobs/               train-register.yml, batch-score.yml   (Azure ML CLI v2 job specs)
 environment/        conda.yml: packages for the Azure ML jobs (same versions as requirements.txt)
+docs/azure-sandbox.md   the whole flow in Azure ML by hand, from the laptop
 notebooks/          fabric_batch_score.ipynb: OPTIONAL option A (PREDICT in Fabric)
 model-card.md       owner, purpose, data version, metrics, approvals
-requirements.txt    pinned packages; pyproject.toml: ruff settings
+requirements.txt    pinned packages; requirements-azure.txt adds azureml-mlflow;
+                    pyproject.toml: ruff settings
 */README.md         short guides inside src/, tests/ and .github/workflows/
 data/, outputs/, mlflow.db, mlruns/   local only, never committed
                     (data/predictions/<predictions_table>/ = local stand-in for the Gold table)
@@ -65,26 +63,28 @@ data/, outputs/, mlflow.db, mlruns/   local only, never committed
 3. Change the fake data in `tests/conftest.py` to your columns, and the column
    lists in `tests/test_rules.py` to your leaking and ID columns.
 4. Run the pipeline locally (commands below) until tests pass and metrics make sense.
-5. Fill in `model-card.md`. In `jobs/*.yml`, check every `# ASSUMPTION:` line
-   (datastore names, data paths, the Gold table's OneLake address, compute)
-   with the platform team.
+5. Fill in `model-card.md`. Check every `# ASSUMPTION:` line in `jobs/*.yml`
+   (cluster name) and `config.yml` (`cost`). Try the flow by hand in Azure ML
+   once: `docs/azure-sandbox.md` (train, approve, score, export, cost).
 6. Push to `main`: CI checks the code. Run **Train** (`train.yml`): Azure ML
    trains and evaluates; if the new model is better it becomes `candidate`.
 7. Run **Deploy** (`deploy.yml`) with that version: a reviewer approves in
    GitHub (`production` environment) → `champion` → exported as a standard
    MLflow folder (`model-export` download). Add a row to `model-card.md`.
-8. `score.yml` scores every night with the champion and replaces the rows of the Gold table.
+8. `score.yml` scores every night with the champion (Delta table in the job's
+   output; with the Fabric connection, the Gold table).
 9. Every quarter `review-reminder.yml` opens an issue: keep, retrain or retire?
 
-**Scoring:** the default is an **Azure ML batch job** (`jobs/batch-score.yml`)
-that writes the predictions as a **Delta table** (Fabric's table format) into
-the Gold lakehouse, e.g. `ml_tool_wear_predictions`; Power BI reads it directly.
+**Data and Fabric:** for now the jobs upload `data/raw/ai4i2020.csv` from the
+computer that starts them, and scoring writes the Delta table
+`ml_tool_wear_predictions` to the job's output. The Fabric connection (read Gold
+tables, write the Gold `ml_` table for Power BI) is designed but not built: it
+changes `src/data.py`, `write_predictions` and the job inputs (design section 9).
 The notebook in `notebooks/` (scoring inside Fabric with PREDICT) is optional.
 
-**Demo:** `demo-local-flow.yml` runs train → approval → score on GitHub's own
-computers with no Azure. It shows the approval gate (environment
-`approval-demo`). It runs only when started by hand ("Run workflow" on the
-Actions tab). It is **not** the production pipeline; delete it once Azure works.
+**Demo:** `demo-local-flow.yml` (started by hand) runs train → approval →
+export → score on GitHub's computers, no Azure (environment `approval-demo`).
+It is **not** the production pipeline; delete it once Azure works.
 
 ## Commands
 
@@ -97,7 +97,9 @@ python -m src.evaluate                       # writes outputs/evaluation.json an
 python -m src.register                       # registers as "candidate" if better
 python -m src.register --promote <version>   # human approval: set "champion"
 python -m src.export                         # champion -> outputs/export/tool-wear-v<N>/
-az ml job create --file jobs/train-register.yml   # same steps in Azure ML (after az login)
+pip install -r requirements-azure.txt        # only to work with Azure ML from the laptop
+az ml job create --file jobs/train-register.yml --stream   # same steps in Azure ML
+# promote/export on Azure ML: see docs/azure-sandbox.md (MLFLOW_TRACKING_URI)
 python -m src.score --input data/raw/ai4i2020.csv   # -> data/predictions/ml_tool_wear_predictions/
 pytest
 ruff check . && ruff format --check .
@@ -113,10 +115,9 @@ resources and gives you these IDs; store them as **GitHub variables** (not secre
 `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
 `AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`. Without them the Azure workflows
 are skipped, so a new repo stays green. They also give you the project's **own
-cluster** (name → `compute:` in `jobs/*.yml`; machine type → `cost` in `config.yml`). Also create the `production` environment
-with the reviewers as required reviewers. The platform team also grants the
-project's identity read access to the input data and write access to the Gold
-table in Fabric.
+cluster** (name → `compute:` in `jobs/*.yml`; machine type → `cost` in
+`config.yml`). Also create the `production` environment with the reviewers as
+required reviewers.
 
 ## Rules (what not to do)
 
@@ -127,8 +128,8 @@ table in Fabric.
 - **No leaking features**: never use IDs or the failure-reason columns
   (TWF, HDF, PWF, OSF, RNF) as inputs; they are only known after a failure.
   `tests/test_rules.py` fails if `config.yml` stops dropping them.
-- **Not only accuracy**: failures are rare, so report recall, precision, F1 and
-  PR-AUC. PR-AUC (`average_precision`) decides if a model is better; never accuracy.
+- **Not only accuracy**: report recall, precision, F1 and PR-AUC (failures are
+  rare); PR-AUC (`average_precision`) decides, never accuracy.
 - **Compare fairly**: `evaluate.py` compares the new model with the approved one
   on the same test set. Do not skip it.
 - **Never promote without approval**: `champion` is set only after a reviewer approves.
@@ -140,9 +141,9 @@ table in Fabric.
   `environment/conda.yml` (`tests/test_azure_files.py` checks they match).
 - **Predictions go to an `ml_` Gold table**; `tests/test_rules.py` checks the name
   and that `jobs/batch-score.yml` writes to the same table.
-- **Mark guesses** about the platform (datastore names, paths) with `# ASSUMPTION:`.
+- **Mark guesses** about the platform (cluster name, prices, paths) with `# ASSUMPTION:`.
 - Scripts read inputs from paths and write outputs to paths (`argparse`), so they
   run the same locally and in Azure ML. Settings go in `config.yml`, not in code.
-- Ask before adding a dependency; pin its version in `requirements.txt`.
-- Keep code simple: small functions, type hints, short docstrings.
+- Ask before adding a dependency; pin its version. Keep code simple: small
+  functions, type hints, short docstrings.
 - When you change this repo's structure or workflow, update this file in the same change.

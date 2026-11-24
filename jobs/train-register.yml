@@ -26,13 +26,14 @@ command: >-
 inputs:
   training_data:
     type: uri_file
-    # Frozen copy of the training data in OneLake, in a dated folder, so every
-    # run can be traced back to the exact data it used (design section 4.4).
-    # ASSUMPTION: the platform team registers the OneLake lakehouse as an Azure ML
-    # datastore called "onelake_manufacturing", and the data owner exports the
-    # data to Files/ml/tool-wear/<date>/. Change the name, path and date to yours.
-    path: azureml://datastores/onelake_manufacturing/paths/Files/ml/tool-wear/2026-11-20/ai4i2020.csv
+    # A file on YOUR computer: `az ml job create` uploads it with the job (run
+    # `python -m src.prep` once first, so the example data is downloaded).
+    # prep.py logs its fingerprint, so the run can be traced back to the data.
+    path: ../data/raw/ai4i2020.csv
     mode: download
+    # Later, with the Fabric connection (design section 9): a Gold table
+    # address, read by src/data.py, e.g.
+    # abfss://<workspace>@onelake.dfs.fabric.microsoft.com/<lakehouse>.Lakehouse/Tables/<table>
 
 environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest

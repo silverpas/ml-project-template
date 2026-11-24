@@ -69,7 +69,11 @@ runs in Azure.
 
 ## Run it in Azure ML
 
-Once the platform team has set up Azure and you have stored the five GitHub
+**First, by hand from your laptop:** [docs/azure-sandbox.md](docs/azure-sandbox.md)
+walks through train → approve → score → export → cost in an Azure ML workspace,
+without GitHub workflows or Fabric.
+
+**Then with the workflows,** once the platform team has set up Azure and you have stored the five GitHub
 variables and created the `production` environment:
 
 1. *Actions* → **Train (Azure ML)** → Run workflow. Azure ML runs
@@ -77,24 +81,27 @@ variables and created the `production` environment:
    model is better, the version to approve.
 2. *Actions* → **Deploy (approval gate)** → Run workflow with that version.
    A reviewer approves; the version becomes champion.
-3. **Score (nightly)** then runs every night and writes predictions to the
-   Gold table `ml_tool_wear_predictions` in Fabric. **Review reminder** opens an
-   issue every quarter.
+3. **Score (nightly)** then runs every night and writes the predictions table
+   `ml_tool_wear_predictions` (Delta) to the job's output. **Review reminder**
+   opens an issue every quarter.
 
-Before the first run, check every `# ASSUMPTION:` line in `jobs/*.yml` with the
-platform team (datastore names, data paths, compute name).
+For now the jobs upload the example CSV; reading from and writing to Fabric
+(Gold tables, for Power BI) is the next step, designed but not built. Before
+the first run, check every `# ASSUMPTION:` line in `jobs/*.yml` (cluster name)
+and in `config.yml` (`cost`).
 
 ## Folders
 
 | Path | What it is | Change it for a new use case? |
 |---|---|---|
 | `config.yml` | All settings: data, target column, columns to drop, model, metric | **Yes**, the main place |
-| [`src/`](src/README.md) | The five pipeline steps | Only `prep.py`, if your data needs different cleaning |
+| [`src/`](src/README.md) | The pipeline steps | Only `prep.py`, if your data needs different cleaning |
 | [`tests/`](tests/README.md) | Automatic checks on fake data | Adapt the fake data, add tests for your cleaning |
-| `requirements.txt` | Python packages with exact versions | Rarely |
+| `requirements.txt` | Python packages with exact versions (`requirements-azure.txt` adds the one for working with Azure ML from a laptop) | Rarely |
 | `pyproject.toml` | Settings for pytest and ruff | No |
 | [`.github/workflows/`](.github/workflows/README.md) | CI, the Azure workflows (train, deploy, score, review) and the demo | No |
 | `jobs/`, `environment/` | Azure ML job files and packages | Check the `# ASSUMPTION:` lines |
+| [`docs/azure-sandbox.md`](docs/azure-sandbox.md) | The flow in Azure ML by hand | No |
 | `notebooks/` | Optional: scoring inside Fabric instead of Azure ML | Only if you use it |
 | `model-card.md` | Owner, purpose, data version, metrics, approvals | **Yes**, fill it in |
 

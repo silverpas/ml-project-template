@@ -11,7 +11,9 @@ model_uri and scored_at.
 Where the predictions go (--output):
 - default: a Delta table in data/predictions/<predictions_table>/ (git-ignored),
   the local stand-in for the Gold table in Fabric;
-- in Azure ML: the Gold table itself, as an abfss://...onelake... address;
+- in Azure ML: a Delta table in the job's output folder (jobs/batch-score.yml);
+  later the Gold table in Fabric, as an abfss://...onelake... address
+  (design section 9, not built yet);
 - a path ending in .csv or .parquet: a plain file (handy to open in Excel).
 
 Delta is the table format Fabric uses: Parquet files plus a log of versions.
@@ -56,12 +58,12 @@ def score(df: pd.DataFrame, model_uri: str, threshold: float) -> pd.DataFrame:
 def write_predictions(df: pd.DataFrame, output: str) -> None:
     """Write a CSV or Parquet file, or (any other path) replace a Delta table."""
     if is_onelake(output):
-        # ASSUMPTION: the job runs as this project's identity (ml-project module),
-        # which has write access to the Gold lakehouse in Fabric.
-        write_deltalake(
-            output, df, mode="overwrite", storage_options={"use_fabric_endpoint": "true"}
+        # Later (design section 9): the same write_deltalake call, with a token
+        # for the job's identity and storage_options={"use_fabric_endpoint": "true"}.
+        raise NotImplementedError(
+            "Writing to Fabric is not built yet (see the design, section 9). "
+            "Write to a folder or a .csv/.parquet file for now."
         )
-        return
 
     path = Path(output)
     path.parent.mkdir(parents=True, exist_ok=True)

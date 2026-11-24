@@ -9,7 +9,7 @@ repo's **Actions** tab.
 | `ci.yml` | Every push and pull request | Runs ruff and pytest; ✅ or ❌ on the commit | No |
 | `train.yml` | "Run workflow" button | Submits `jobs/train-register.yml` to Azure ML; shows the comparison and the version to approve | Yes |
 | `deploy.yml` | "Run workflow" button, with a version | Approval gate (`production` environment), then promotes the version to champion and exports it (`model-export` download) | Yes |
-| `score.yml` | Every night at 02:00 UTC, or the button | Submits `jobs/batch-score.yml` to Azure ML; predictions go to the Gold table in Fabric | Yes |
+| `score.yml` | Every night at 02:00 UTC, or the button | Submits `jobs/batch-score.yml` to Azure ML; predictions (Delta table) go to the job's output, later to the Gold table in Fabric | Yes |
 | `review-reminder.yml` | 1 Jan, Apr, Jul, Oct, or the button | Opens an issue: "review this model: keep, retrain or retire?" (not in the template repo itself) | No |
 | `demo-local-flow.yml` | Only the "Run workflow" button (manual) | **Demo only.** The whole flow on GitHub's computers: train → approval → export → score | No |
 
