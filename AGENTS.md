@@ -28,10 +28,10 @@ Jargon in one line each:
 
 | Step | What happens | This repo? |
 |---|---|---|
-| 0. Explore | Try the idea anywhere, no request needed | No |
+| 0. Explore | Try the idea on a laptop, no request needed | No |
 | 1. Request | Someone fills in the request form | No (ML requests repo) |
-| 2. Qualify | Platform lead says go; Azure is set up; this repo is created | Created here |
-| 3. Data and priority | Data access is granted | Uses it |
+| 2. Qualify | Platform lead says go | No |
+| 3. Data and priority | Data access is granted; then Azure is set up and this repo is created | Created here |
 | 4. Build | Train, evaluate, register, approval gate | **Yes, the main work** |
 | 5. Run and review | Nightly scoring, quarterly review | **Yes** (`score.yml`, `review-reminder.yml`) |
 
