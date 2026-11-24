@@ -139,11 +139,11 @@ required reviewers.
 - **Read data only through `src/data.py`** (`read_data`), so a new source is one change.
 - **Same packages everywhere**: a version change goes in `requirements.txt` AND
   `environment/conda.yml` (`tests/test_azure_files.py` checks they match).
+  **MLflow stays at 2.16**, the newest Azure ML supports (MLflow 3 fails there).
 - **Predictions go to an `ml_` Gold table**; `tests/test_rules.py` checks the name
   and that `jobs/batch-score.yml` writes to the same table.
 - **Mark guesses** about the platform (cluster name, prices, paths) with `# ASSUMPTION:`.
 - Scripts read inputs from paths and write outputs to paths (`argparse`), so they
   run the same locally and in Azure ML. Settings go in `config.yml`, not in code.
-- Ask before adding a dependency; pin its version. Keep code simple: small
-  functions, type hints, short docstrings.
+- Ask before adding a dependency; pin its version. Keep code simple and small.
 - When you change this repo's structure or workflow, update this file in the same change.

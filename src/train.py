@@ -25,15 +25,6 @@ from sklearn.preprocessing import OrdinalEncoder
 from src.common import git_commit, load_config, read_json, setup_mlflow, write_json
 from src.evaluate import compute_metrics
 
-# MLflow saves sklearn models with "skops", a safe format that only loads
-# object types you explicitly trust (a pickle file could run any code on load).
-# These are the LightGBM types inside our model. Update if you change the model.
-TRUSTED_MODEL_TYPES = [
-    "collections.OrderedDict",
-    "lightgbm.basic.Booster",
-    "lightgbm.sklearn.LGBMClassifier",
-]
-
 
 def split_features_target(df: pd.DataFrame, target: str) -> tuple[pd.DataFrame, pd.Series]:
     """Separate the input columns (X) from the column to predict (y)."""
@@ -101,10 +92,9 @@ def main(argv: list[str] | None = None) -> None:
         signature = infer_signature(X, model.predict(X))
         model_info = mlflow.sklearn.log_model(
             model,
-            name="model",
+            artifact_path="model",
             signature=signature,
             input_example=X.head(5),
-            skops_trusted_types=TRUSTED_MODEL_TYPES,
         )
 
     write_json({"run_id": run.info.run_id, "model_uri": model_info.model_uri}, args.run_info)

@@ -94,3 +94,11 @@ def test_both_jobs_run_on_the_projects_own_cluster():
     jobs = [yaml.safe_load((ROOT / "jobs" / name).read_text()) for name in JOB_NAMES]
     computes = {job["compute"] for job in jobs}
     assert len(computes) == 1
+
+
+def test_mlflow_stays_on_a_version_azure_ml_supports():
+    """Azure ML supports MLflow up to 2.16; MLflow 3 fails there when saving a model."""
+    major, minor, *_ = pins((ROOT / "requirements.txt").read_text().splitlines())["mlflow"].split(
+        "."
+    )
+    assert (int(major), int(minor)) <= (2, 16)

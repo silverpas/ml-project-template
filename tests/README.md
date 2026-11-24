@@ -13,7 +13,7 @@ they use small fake data and a temporary MLflow store.
 | `test_export.py` | Only approved versions can be exported; the folder loads with plain MLflow |
 | `test_cost.py` | The cost estimate (0 on a laptop), and that it lands on the right MLflow run |
 | `test_registry.py` | Status tags: one champion at a time, the previous one is archived |
-| `test_azure_files.py` | Azure files without Azure: job specs complete, same packages as `requirements.txt`, OIDC only, no secrets |
+| `test_azure_files.py` | Azure files without Azure: job specs complete, same packages as `requirements.txt`, MLflow on a version Azure ML supports, OIDC only, no secrets |
 | `test_rules.py` | The real `config.yml` follows the rules: leaking and ID columns dropped, a supported primary metric (never accuracy) |
 
 **For a new use case:** change `make_raw_data()` in `conftest.py` so the fake

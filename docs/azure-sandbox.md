@@ -118,6 +118,8 @@ Some parts are marked `# ASSUMPTION:` because only a real run can confirm them:
       on the job's run (if `estimated_cost` is missing, check this first).
 - [ ] The cluster loads the environment with the project identity (AcrPull).
 - [ ] `src/export.py` can download a model from the Azure ML registry.
+- [x] MLflow 3 cannot save models in Azure ML (404 on `logged-models`): the
+      template uses MLflow 2.16, the newest version Azure ML supports.
 - [ ] The `status` tags work the same in the Azure ML registry as locally.
 
 ## When something fails
@@ -129,3 +131,4 @@ Some parts are marked `# ASSUMPTION:` because only a real run can confirm them:
 | `compute ... not found` | Another cluster name | Fix `compute:` in `jobs/*.yml` |
 | `No approved version` | Nothing promoted yet, or MLflow points at local | Step 2; check `echo $MLFLOW_TRACKING_URI` |
 | the input path | `data/raw/ai4i2020.csv` missing | `python -m src.prep` once |
+| `logged-models` … `404` | MLflow 3 in the environment: Azure ML supports MLflow up to 2.16 | Keep `mlflow==2.16.2` in `requirements.txt` and `environment/conda.yml` |

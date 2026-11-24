@@ -2,12 +2,15 @@
 # On macOS, LightGBM also needs: brew install libomp
 
 # Pipeline
-pandas==3.1.1
-pyarrow==26.0.1        # read/write Parquet files
+pandas==2.2.3          # MLflow 2.16 needs pandas < 3
+pyarrow==17.0.0        # read/write Parquet files (MLflow 2.16 needs < 18)
 pyyaml==6.0.3          # read config.yml
 scikit-learn==1.9.1
 lightgbm==4.7.0
-mlflow==3.18.0
+# MLflow 2.16: the newest version Azure ML supports (MLflow 3 fails there when
+# saving a model). Do not upgrade until Azure ML documents MLflow 3 support.
+mlflow==2.16.2
+sqlalchemy==2.0.58     # MLflow 2.16 breaks with SQLAlchemy 2.1
 deltalake==1.7.0      # write Delta tables (the table format Fabric uses)
 
 # Development

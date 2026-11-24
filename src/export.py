@@ -7,7 +7,7 @@ Usage:
 Only approved versions (status champion or archived) can be exported.
 The folder (default outputs/export/<model>-v<version>/) holds:
     MLmodel                   what the model is and how to load it (pyfunc flavor)
-    model.skops               the model itself
+    model.pkl                 the model itself
     requirements.txt, conda.yaml, python_env.yaml   the exact packages it needs
     input_example.json        a few rows, to try it out
     export.json               which version, from which run, when, and its test metric

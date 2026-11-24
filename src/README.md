@@ -22,5 +22,5 @@ Settings come from `../config.yml`.
 
 **For a new use case:** usually only `prep.py` changes, and only if your data
 needs different cleaning (`prepare`). Data from a new kind of place (later:
-Fabric tables) is a new branch in `data.py`, nowhere else. If you change the model type,
-also update `TRUSTED_MODEL_TYPES` in `train.py`.
+Fabric tables) is a new branch in `data.py`, nowhere else. The model is saved with
+MLflow 2 (`mlflow.sklearn.log_model`), the version Azure ML supports.
