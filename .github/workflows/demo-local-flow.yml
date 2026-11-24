@@ -9,7 +9,8 @@
 #   1. train   prep → train → evaluate → register as "candidate"
 #              → results table on the run page
 #   2. deploy  waits for a reviewer to click "Approve"   (the approval gate)
-#              → model becomes "champion" → scoring → predictions to download
+#              → model becomes "champion" → export → scoring
+#              → exported model and predictions to download
 #
 # The Azure version (train.yml + deploy.yml, coming later) has the same steps;
 # it only runs the work in Azure ML and writes predictions to Fabric.
@@ -132,6 +133,9 @@ jobs:
       - name: Promote the approved model to champion
         run: python -m src.register --promote "${{ needs.train.outputs.version }}"
 
+      - name: Export the approved model (standard MLflow folder)
+        run: python -m src.export
+
       # In real use you would score NEW data; the demo re-uses the dataset.
       - name: Score with the champion
         run: python -m src.score --input data/raw/ai4i2020.csv --output data/predictions/predictions.csv
@@ -142,7 +146,7 @@ jobs:
             echo "## Approved and scored"
             echo ""
             echo "Version ${{ needs.train.outputs.version }} is now the **champion**."
-            echo "Download the predictions under **Artifacts** → \`predictions\` on this page."
+            echo "Download the predictions and the exported model under **Artifacts** on this page."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Make the predictions downloadable
@@ -150,6 +154,13 @@ jobs:
         with:
           name: predictions
           path: data/predictions/predictions.csv
+          retention-days: 7
+
+      - name: Make the exported model downloadable
+        uses: actions/upload-artifact@v7
+        with:
+          name: model-export
+          path: outputs/export/
           retention-days: 7
 
       # Save the registry with the new champion for the next run.

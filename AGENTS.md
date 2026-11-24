@@ -8,7 +8,7 @@ coding agents. Read this before changing anything.
 One repo = one ML use case. It holds the code that turns data into an approved
 model and then into predictions:
 
-prepare data → train → evaluate → register → (human approval) → score.
+prepare data → train → evaluate → register → (human approval) → export → score.
 
 Everything runs **locally first** (laptop, local MLflow, local files) and then
 the same scripts run as **Azure ML jobs**. The example predicts machine
@@ -40,7 +40,7 @@ Jargon in one line each:
 ```
 config.yml          all settings (data, target, columns to drop, model, metric,
                     predictions_table)
-src/                prep.py, train.py, evaluate.py, register.py, score.py,
+src/                prep.py, train.py, evaluate.py, register.py, export.py, score.py,
                     data.py (the ONE place that reads data), registry.py
                     (status tags), common.py (shared helpers)
 tests/              pytest checks on small fake data
@@ -71,7 +71,8 @@ data/, outputs/, mlflow.db, mlruns/   local only, never committed
 6. Push to `main`: CI checks the code. Run **Train** (`train.yml`): Azure ML
    trains and evaluates; if the new model is better it becomes `candidate`.
 7. Run **Deploy** (`deploy.yml`) with that version: a reviewer approves in
-   GitHub (`production` environment) → `champion`. Add a row to `model-card.md`.
+   GitHub (`production` environment) → `champion` → exported as a standard
+   MLflow folder (`model-export` download). Add a row to `model-card.md`.
 8. `score.yml` scores every night with the champion and replaces the rows of the Gold table.
 9. Every quarter `review-reminder.yml` opens an issue: keep, retrain or retire?
 
@@ -95,6 +96,7 @@ python -m src.train
 python -m src.evaluate                       # writes outputs/evaluation.json and .md
 python -m src.register                       # registers as "candidate" if better
 python -m src.register --promote <version>   # human approval: set "champion"
+python -m src.export                         # champion -> outputs/export/tool-wear-v<N>/
 az ml job create --file jobs/train-register.yml   # same steps in Azure ML (after az login)
 python -m src.score --input data/raw/ai4i2020.csv   # -> data/predictions/ml_tool_wear_predictions/
 pytest
@@ -129,6 +131,7 @@ table in Fabric.
 - **Compare fairly**: `evaluate.py` compares the new model with the approved one
   on the same test set. Do not skip it.
 - **Never promote without approval**: `champion` is set only after a reviewer approves.
+  Only approved versions can be exported (`src/export.py` refuses the others).
 - **Every training run logs** parameters, metrics, the data version and the git commit.
 - **Read data only through `src/data.py`** (`read_data`), so a new source is one change.
 - **Same packages everywhere**: a version change goes in `requirements.txt` AND

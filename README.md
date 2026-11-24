@@ -18,6 +18,7 @@ Fabric lakehouse (training data snapshot)
   → Azure ML: prep → train → evaluate        only a better model continues
   → registered as "candidate"
   → reviewer approves in GitHub               the model becomes "champion"
+  → exported as a standard MLflow folder      runs in Azure ML, Fabric or locally
   → Azure ML: nightly batch scoring with the champion   (the default)
   → Fabric lakehouse (predictions table) → Power BI
 ```

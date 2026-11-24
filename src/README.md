@@ -1,6 +1,6 @@
 # `src/`: the ML code
 
-The five pipeline steps. Each one is a small command-line program that reads
+The pipeline steps. Each one is a small command-line program that reads
 from a path and writes to a path, so it runs the same on a laptop and as an
 Azure ML job.
 
@@ -12,6 +12,7 @@ Azure ML job.
 | `evaluate.py` | Compare the new model with the approved one on the same test set | `data/processed/test.parquet` | `outputs/evaluation.json` |
 | `register.py` | Register a better model as `candidate`; `--promote N` approves it as `champion` | `outputs/evaluation.json` | MLflow model registry |
 | `registry.py` | Helper: the `status` tag (candidate, champion, archived) on model versions | | |
+| `export.py` | Save the approved model as a standard MLflow folder, and check that it loads | MLflow model registry (champion) | `outputs/export/tool-wear-v<N>/` |
 | `score.py` | Predict on new data with the approved model | a CSV, Parquet or Delta table (via `data.py`) | Delta table `data/predictions/ml_tool_wear_predictions/` (in Azure: the Gold table) |
 | `common.py` | Shared helpers: read config, set up MLflow, git commit, file fingerprint | | |
 

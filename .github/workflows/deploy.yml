@@ -1,5 +1,5 @@
 # THE APPROVAL GATE. Makes a candidate version the champion (the version that
-# nightly scoring uses). GitHub pauses this run until a required reviewer of
+# nightly scoring uses), then exports it as a standard MLflow model folder. GitHub pauses this run until a required reviewer of
 # the "production" environment clicks Approve (Settings → Environments).
 #
 # Start it from the Actions tab ("Run workflow") with the version shown by train.yml.
@@ -58,4 +58,15 @@ jobs:
             --name "${{ vars.AZURE_ML_WORKSPACE }}" \
             --query mlflow_tracking_uri --output tsv)
           python -m src.register --promote "$VERSION"
+          python -m src.export --version "$VERSION"
           echo "Version **$VERSION** is now the **champion**. Nightly scoring uses it from now on." >> "$GITHUB_STEP_SUMMARY"
+          echo "The exported model is under **Artifacts** → \`model-export\` on this page." >> "$GITHUB_STEP_SUMMARY"
+
+      # The approved model as a standard MLflow folder: can be registered in
+      # Fabric or loaded anywhere with mlflow.pyfunc.load_model.
+      - name: Keep the exported model
+        uses: actions/upload-artifact@v7
+        with:
+          name: model-export
+          path: outputs/export/
+          retention-days: 90
