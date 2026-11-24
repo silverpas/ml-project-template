@@ -45,5 +45,5 @@ environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
   conda_file: ../environment/conda.yml
 
-# ASSUMPTION: same CPU cluster as training.
-compute: azureml:cpu-cluster
+# ASSUMPTION: the project's own cluster, the same as for training.
+compute: azureml:cpu-tool-wear

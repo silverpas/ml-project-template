@@ -34,6 +34,9 @@ def conda_pins() -> dict[str, str]:
     return pins(pip_list)
 
 
+JOB_NAMES = ["train-register.yml", "batch-score.yml"]
+
+
 def test_there_are_two_jobs():
     assert [job.name for job in JOBS] == ["batch-score.yml", "train-register.yml"]
 
@@ -82,3 +85,10 @@ def test_fabric_notebook_is_valid():
     notebook = json.loads((ROOT / "notebooks" / "fabric_batch_score.ipynb").read_text())
     assert notebook["nbformat"] == 4
     assert notebook["cells"]
+
+
+def test_both_jobs_run_on_the_projects_own_cluster():
+    """One cluster per project: training and scoring use the same one."""
+    jobs = [yaml.safe_load((ROOT / "jobs" / name).read_text()) for name in JOB_NAMES]
+    computes = {job["compute"] for job in jobs}
+    assert len(computes) == 1

@@ -38,5 +38,7 @@ environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
   conda_file: ../environment/conda.yml
 
-# ASSUMPTION: the ml-workspace module creates a CPU cluster with this name.
-compute: azureml:cpu-cluster
+# The project's own cluster (ml-project module: cpu-<use case>, scales to 0,
+# runs as the project's identity). ASSUMPTION: the default name; the platform
+# team gives you the real one (output `cluster`).
+compute: azureml:cpu-tool-wear

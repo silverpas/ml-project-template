@@ -112,7 +112,8 @@ No infrastructure code lives here. The platform team creates the Azure
 resources and gives you these IDs; store them as **GitHub variables** (not secrets):
 `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
 `AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`. Without them the Azure workflows
-are skipped, so a new repo stays green. Also create the `production` environment
+are skipped, so a new repo stays green. They also give you the project's **own
+cluster** (name → `compute:` in `jobs/*.yml`; machine type → `cost` in `config.yml`). Also create the `production` environment
 with the reviewers as required reviewers. The platform team also grants the
 project's identity read access to the input data and write access to the Gold
 table in Fabric.
