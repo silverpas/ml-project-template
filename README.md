@@ -107,7 +107,8 @@ stand-in for the Gold predictions table), `outputs/`, `mlflow.db`, `mlruns/`, `.
 2. Create a repo from this template ("Use this template" on GitHub).
 3. In `config.yml`, change the `data` section (source, target, columns to drop)
    and `model.name`.
-4. If your data needs other cleaning, adapt `load_raw` / `prepare` in `src/prep.py`.
+4. If your data needs other cleaning, adapt `prepare` in `src/prep.py`. Reading
+   the data (file or Delta table) happens in `src/data.py`.
 5. Change the fake data in `tests/conftest.py` to your columns.
 6. Run the pipeline and `pytest` locally until the tests pass and the metrics make sense.
 7. Set the five GitHub variables and add reviewers to the `production` environment.

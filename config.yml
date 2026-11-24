@@ -5,9 +5,11 @@
 # For a new use case, change the `data` and `model` sections.
 
 data:
-  # Where to download the raw data from (only used if raw_file does not exist yet).
+  # The data to train on: a CSV or Parquet file, or a Delta table folder
+  # (read by src/data.py; reading from Fabric comes later).
+  source: data/raw/ai4i2020.csv
+  # Example data only: downloaded to `source` the first time. Remove for your own data.
   source_url: https://archive.ics.uci.edu/static/public/601/ai4i+2020+predictive+maintenance+dataset.zip
-  raw_file: data/raw/ai4i2020.csv
   # Column we want to predict (name after cleaning, see src/prep.py).
   target: machine_failure
   # Columns we never use as features:

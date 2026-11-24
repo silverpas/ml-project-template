@@ -59,7 +59,7 @@ def config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     make_raw_data().to_csv(raw_file, index=False)
 
     config = yaml.safe_load(Path(__file__).parents[1].joinpath("config.yml").read_text())
-    config["data"]["raw_file"] = str(raw_file)
+    config["data"]["source"] = str(raw_file)
     config["data"]["source_url"] = "http://invalid.example/never-downloaded.zip"
     config["model"]["params"]["n_estimators"] = 20  # keep tests fast
     config["mlflow"]["tracking_uri"] = f"sqlite:///{tmp_path / 'mlflow.db'}"

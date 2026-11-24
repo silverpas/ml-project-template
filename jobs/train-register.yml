@@ -15,7 +15,7 @@ experiment_name: tool-wear # same as mlflow.experiment in config.yml
 code: ../ # the whole repo (files listed in .gitignore are not uploaded)
 
 command: >-
-  python -m src.prep --raw ${{inputs.training_data}} &&
+  python -m src.prep --input ${{inputs.training_data}} &&
   python -m src.train &&
   python -m src.evaluate &&
   python -m src.register

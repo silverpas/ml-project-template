@@ -30,7 +30,7 @@ approve), *production-critical* (also operations sign-off and a fallback plan).
 | | |
 |---|---|
 | Source | AI4I 2020 Predictive Maintenance (UCI, id 601, public, CC BY 4.0) |
-| Training data version | [OneLake path, e.g. `Files/ml/tool-wear/2026-11-20/`, and `raw_sha256` from the MLflow run] |
+| Training data version | [From the MLflow run's tags: `data_source`, plus `data_source_version` (Delta table) or `data_source_sha256` (file)] |
 | Target | `machine_failure` (about 3% of rows are failures) |
 | Excluded columns | IDs (`udi`, `product_id`) and failure reasons (`twf`, `hdf`, `pwf`, `osf`, `rnf`): known only after a failure |
 

@@ -6,6 +6,7 @@ they use small fake data and a temporary MLflow store.
 | File | Checks |
 |---|---|
 | `conftest.py` | Shared setup: fake data shaped like the real dataset, and a test config |
+| `test_data.py` | Reading CSV, Parquet and Delta tables gives the same data; the data version is recorded |
 | `test_prep.py` | Column cleaning, leaking columns are dropped, the split keeps the failure rate |
 | `test_evaluate.py` | Metrics, and the rule "only a better model becomes a candidate" |
 | `test_pipeline.py` | All five steps end to end: prep → train → evaluate → register → score; the model has no leaking inputs |

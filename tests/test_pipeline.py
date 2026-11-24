@@ -47,14 +47,14 @@ def test_full_pipeline(config_path: Path):
     raw_file = str(Path(config_path).parent / "raw.csv")
     score.main(["--config", config, "--input", raw_file])
     table = "data/predictions/ml_tool_wear_predictions"
-    predictions = DeltaTable(table).to_pyarrow_table().to_pandas()
+    predictions = DeltaTable(table).to_pyarrow_table(engine="datafusion").to_pandas()
     assert len(predictions) == 400
     assert predictions["failure_probability"].between(0, 1).all()
     assert set(predictions["predicted_failure"]) <= {0, 1}
 
     # Scoring again replaces the rows (no duplicates) and adds a table version.
     score.main(["--config", config, "--input", raw_file])
-    assert DeltaTable(table).to_pyarrow_table().num_rows == 400
+    assert DeltaTable(table).to_pyarrow_table(engine="datafusion").num_rows == 400
     assert DeltaTable(table).version() == 1  # versions 0 and 1
 
     # A .csv output still writes a plain file.

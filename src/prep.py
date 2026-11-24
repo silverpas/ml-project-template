@@ -2,10 +2,14 @@
 
 Usage:
     python -m src.prep --out data/processed
+    python -m src.prep --input data/tables/sensors     # a Delta table instead of the CSV
+
+The data is read with src/data.py (CSV, Parquet or Delta table).
 
 Outputs (in --out):
     train.parquet, test.parquet   features + target
-    metadata.json                 row counts and file fingerprints (data version)
+    metadata.json                 which data it was (source, format, version or
+                                  fingerprint), row counts and file fingerprints
 """
 
 from __future__ import annotations
@@ -21,20 +25,16 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from src.common import file_sha256, load_config, write_json
+from src.data import describe_source, is_onelake, read_data
 
 
 def download_raw(url: str, dest: Path) -> None:
-    """Download the zip from `url` and save the CSV inside it to `dest`."""
+    """Download the example zip from `url` and save the CSV inside it to `dest`."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(url) as response:
         archive = zipfile.ZipFile(io.BytesIO(response.read()))
     csv_name = next(n for n in archive.namelist() if n.endswith(".csv"))
     dest.write_bytes(archive.read(csv_name))
-
-
-def load_raw(path: Path) -> pd.DataFrame:
-    """Read the raw CSV. 'utf-8-sig' strips the invisible BOM the AI4I file starts with."""
-    return pd.read_csv(path, encoding="utf-8-sig")
 
 
 def to_snake_case(name: str) -> str:
@@ -68,7 +68,9 @@ def split(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--config", default="config.yml", help="Settings file")
-    parser.add_argument("--raw", help="Raw CSV (default: data.raw_file in config)")
+    parser.add_argument(
+        "--input", help="CSV, Parquet or Delta table to read (default: data.source in config)"
+    )
     parser.add_argument("--out", default="data/processed", help="Output folder")
     return parser.parse_args(argv)
 
@@ -78,12 +80,13 @@ def main(argv: list[str] | None = None) -> None:
     config = load_config(args.config)
     data_cfg = config["data"]
 
-    raw_path = Path(args.raw or data_cfg["raw_file"])
-    if not raw_path.exists():
-        print(f"Downloading raw data to {raw_path} ...")
-        download_raw(data_cfg["source_url"], raw_path)
+    source = args.input or data_cfg["source"]
+    # The example data is downloaded the first time; your own data is just read.
+    if not is_onelake(source) and not Path(source).exists() and data_cfg.get("source_url"):
+        print(f"Downloading the example data to {source} ...")
+        download_raw(data_cfg["source_url"], Path(source))
 
-    df = prepare(load_raw(raw_path), data_cfg["drop_columns"])
+    df = prepare(read_data(source), data_cfg["drop_columns"])
     train, test = split(
         df, data_cfg["target"], config["split"]["test_size"], config["split"]["seed"]
     )
@@ -94,8 +97,7 @@ def main(argv: list[str] | None = None) -> None:
     test.to_parquet(out / "test.parquet", index=False)
     write_json(
         {
-            "raw_file": str(raw_path),
-            "raw_sha256": file_sha256(raw_path),
+            **describe_source(source),
             "train_rows": len(train),
             "test_rows": len(test),
             "train_sha256": file_sha256(out / "train.parquet"),

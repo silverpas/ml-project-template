@@ -29,15 +29,9 @@ import pandas as pd
 from deltalake import write_deltalake
 
 from src.common import load_config, setup_mlflow
+from src.data import is_onelake, read_data
 from src.prep import clean_columns
 from src.registry import champion_uri
-
-
-def read_table(path: Path) -> pd.DataFrame:
-    """Read a CSV or Parquet file."""
-    if path.suffix == ".parquet":
-        return pd.read_parquet(path)
-    return pd.read_csv(path, encoding="utf-8-sig")
 
 
 def expected_columns(model_uri: str) -> list[str]:
@@ -57,10 +51,6 @@ def score(df: pd.DataFrame, model_uri: str, threshold: float) -> pd.DataFrame:
     result["model_uri"] = model_uri
     result["scored_at"] = datetime.now(UTC)
     return result
-
-
-def is_onelake(output: str) -> bool:
-    return output.startswith("abfss://")
 
 
 def write_predictions(df: pd.DataFrame, output: str) -> None:
@@ -87,7 +77,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--config", default="config.yml", help="Settings file")
     parser.add_argument("--model", help="MLflow model URI (default: the champion)")
-    parser.add_argument("--input", required=True, help="CSV or Parquet file to score")
+    parser.add_argument("--input", required=True, help="CSV, Parquet or Delta table to score")
     parser.add_argument(
         "--output",
         help="Delta table folder or abfss:// address, or a .csv/.parquet file "
@@ -103,7 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     model_uri = args.model or champion_uri(config["model"]["name"])
     output = args.output or f"data/predictions/{config['scoring']['predictions_table']}"
 
-    predictions = score(read_table(Path(args.input)), model_uri, config["evaluation"]["threshold"])
+    predictions = score(read_data(args.input), model_uri, config["evaluation"]["threshold"])
     write_predictions(predictions, output)
     print(
         f"Scored {len(predictions)} rows with {model_uri} -> {output} "
