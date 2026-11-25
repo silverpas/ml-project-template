@@ -39,3 +39,17 @@ def test_export_only_after_approval(config_path: Path, raw_data):
     features = raw_data.head(3).rename(columns=prep.to_snake_case)
     features = features[model.metadata.get_input_schema().input_names()]
     assert len(model.predict(pd.DataFrame(features))) == 3
+
+
+def test_flatten_moves_a_nested_model_up(tmp_path: Path):
+    """The Azure ML registry downloads the model into a subfolder model/."""
+    nested = tmp_path / "tool-wear-v1" / "model"
+    nested.mkdir(parents=True)
+    (nested / "MLmodel").write_text("flavors: {}")
+    (nested / "model.pkl").write_bytes(b"x")
+
+    export.flatten(tmp_path / "tool-wear-v1")
+
+    assert (tmp_path / "tool-wear-v1" / "MLmodel").exists()
+    assert (tmp_path / "tool-wear-v1" / "model.pkl").exists()
+    assert not nested.exists()

@@ -110,17 +110,20 @@ unset MLFLOW_TRACKING_URI   # MLflow uses the local mlflow.db again
 The cluster switches its machines off by itself after the idle time (scales to
 0). Nothing else keeps running.
 
-## What this run checks
+## What a first run confirmed
 
-Some parts are marked `# ASSUMPTION:` because only a real run can confirm them:
+Checked in a test workspace (CPU cluster, AI4I data, November 2026):
 
-- [ ] Azure ML sets `MLFLOW_RUN_ID` in a job, so `src/cost.py` logs the cost
-      on the job's run (if `estimated_cost` is missing, check this first).
-- [ ] The cluster loads the environment with the project identity (AcrPull).
-- [ ] `src/export.py` can download a model from the Azure ML registry.
+- [x] The cluster loads the environment with the project identity (AcrPull).
+- [x] Azure ML sets `MLFLOW_RUN_ID` in a job, so `src/cost.py` logs
+      `job_minutes` and `estimated_cost` on the job's run.
+- [x] The `status` tags (candidate, champion) work in the Azure ML registry.
 - [x] MLflow 3 cannot save models in Azure ML (404 on `logged-models`): the
       template uses MLflow 2.16, the newest version Azure ML supports.
-- [ ] The `status` tags work the same in the Azure ML registry as locally.
+- [x] `src/export.py` downloads the champion from the Azure ML registry. Azure
+      puts the files in a subfolder `model/`; the script moves them up.
+- [x] Same data and code give the same model as on the laptop (PR-AUC 0.838,
+      same data fingerprint, 360 predicted failures).
 
 ## When something fails
 

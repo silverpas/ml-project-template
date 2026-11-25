@@ -56,12 +56,28 @@ def export_model(model_name: str, version: str, out_dir: Path) -> Path:
     if folder.exists():
         shutil.rmtree(folder)  # exporting again gives a clean copy
     folder.parent.mkdir(parents=True, exist_ok=True)
-    # ASSUMPTION: downloading a models:/ URI works the same against the Azure
-    # ML registry (through azureml-mlflow) as locally. To check in the sandbox.
     mlflow.artifacts.download_artifacts(
         artifact_uri=f"models:/{model_name}/{version}", dst_path=str(folder)
     )
+    flatten(folder)
     return folder
+
+
+def flatten(folder: Path) -> None:
+    """Put the model files (MLmodel, model.pkl, ...) directly in `folder`.
+
+    The local registry downloads them there; the Azure ML registry puts them in
+    a subfolder (folder/model/). Moving them up gives the same export everywhere.
+    """
+    if (folder / "MLmodel").exists():
+        return
+    found = list(folder.rglob("MLmodel"))
+    if len(found) != 1:
+        raise FileNotFoundError(f"Expected one MLmodel file under {folder}, found {len(found)}")
+    nested = found[0].parent
+    for item in list(nested.iterdir()):
+        shutil.move(str(item), folder / item.name)
+    nested.rmdir()
 
 
 def check_export(folder: Path) -> int:
