@@ -98,7 +98,7 @@ python -m src.register                       # registers as "candidate" if bette
 python -m src.register --promote <version>   # human approval: set "champion"
 python -m src.export                         # champion -> outputs/export/tool-wear-v<N>/
 pip install -r requirements-azure.txt        # only to work with Azure ML from the laptop
-az ml job create --file jobs/train-register.yml --stream   # same steps in Azure ML
+az ml job create --file jobs/train-register.yml            # same steps in Azure ML
 # promote/export on Azure ML: see docs/azure-sandbox.md (MLFLOW_TRACKING_URI)
 python -m src.score --input data/raw/ai4i2020.csv   # -> data/predictions/ml_tool_wear_predictions/
 pytest

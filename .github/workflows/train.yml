@@ -49,7 +49,7 @@ jobs:
           pathlib.Path("data/raw/ai4i2020.csv").write_bytes(archive.read(name))
           EOF
 
-      # Submit the job, then follow its log until it finishes.
+      # Submit the job, then wait until it finishes.
       # GIT_COMMIT: the job's copy of the code has no .git, so pass the commit.
       - name: Run the train-register job in Azure ML
         run: |
@@ -57,9 +57,18 @@ jobs:
             --set environment_variables.GIT_COMMIT="${{ github.sha }}" \
             --query name --output tsv)
           echo "JOB_NAME=$job" >> "$GITHUB_ENV"
-          az ml job stream --name "$job"
-          status=$(az ml job show --name "$job" --query status --output tsv)
-          if [ "$status" != "Completed" ]; then echo "Job ended with status $status"; exit 1; fi
+          # Wait for the job by asking for its status every 30 seconds. (Following
+          # the live log with "az ml job stream" fails in some CLI versions.)
+          echo "Job $job: https://ml.azure.com/runs/$job"
+          while true; do
+            status=$(az ml job show --name "$job" --query status --output tsv)
+            echo "$(date -u +%H:%M:%S) $status"
+            case "$status" in
+              Completed) break ;;
+              Failed|Canceled|NotResponding) echo "Job ended with status $status"; exit 1 ;;
+            esac
+            sleep 30
+          done
 
       # The scripts wrote outputs/evaluation.md and registration.json in the job.
       - name: Show the results on the run page

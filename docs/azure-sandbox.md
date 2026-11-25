@@ -45,7 +45,7 @@ In `config.yml`, set `cost.vm_size` to the cluster's machine type and
 
 ```bash
 az ml job create --file jobs/train-register.yml \
-  --set environment_variables.GIT_COMMIT=$(git rev-parse HEAD) --stream
+  --set environment_variables.GIT_COMMIT=$(git rev-parse HEAD)
 ```
 
 The first job is slow (10-20 minutes): Azure ML builds the Python environment
@@ -72,7 +72,7 @@ runs in `deploy.yml`, only after a reviewer approves in GitHub.)
 ## 3. Score
 
 ```bash
-az ml job create --file jobs/batch-score.yml --stream
+az ml job create --file jobs/batch-score.yml
 az ml job download --name <job name> --output-name predictions --download-path outputs/azure
 ```
 
@@ -132,6 +132,7 @@ Checked in a test workspace (CPU cluster, AI4I data, November 2026):
 | quota, `QuotaExceeded` | Not enough cores for the machine type | A smaller `vm_size`, or ask for quota |
 | `ImagePull`, `unauthorized`, `acr` | The cluster identity cannot read the registry | Ask for AcrPull on the registry for the project identity |
 | `compute ... not found` | Another cluster name | Fix `compute:` in `jobs/*.yml` |
+| `Incorrect padding` (with `--stream` or `az ml job stream`) | A bug in some Azure ML CLI versions while following the live log | Leave out `--stream`; follow the job in Studio or with `az ml job show --name <job> --query status` |
 | `No approved version` | Nothing promoted yet, or MLflow points at local | Step 2; check `echo $MLFLOW_TRACKING_URI` |
 | the input path | `data/raw/ai4i2020.csv` missing | `python -m src.prep` once |
 | `logged-models` … `404` | MLflow 3 in the environment: Azure ML supports MLflow up to 2.16 | Keep `mlflow==2.16.2` in `requirements.txt` and `environment/conda.yml` |
