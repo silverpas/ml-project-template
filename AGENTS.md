@@ -110,14 +110,13 @@ Each script is a CLI: `python -m src.<step> --help` shows its options.
 
 ## Azure settings
 
-No infrastructure code lives here. The platform team creates the Azure
-resources and gives you these IDs; store them as **GitHub variables** (not secrets):
-`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
-`AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`. Without them the Azure workflows
-are skipped, so a new repo stays green. They also give you the project's **own
-cluster** (name → `compute:` in `jobs/*.yml`; machine type → `cost` in
-`config.yml`). Also create the `production` environment with the reviewers as
-required reviewers.
+No infrastructure code lives here. The platform team's Terraform creates the
+Azure resources and usually this repo too, already set up: five **GitHub
+variables** (IDs, not secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+`AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`) and the
+`production` environment with its reviewers. Without the variables the Azure
+workflows are skipped. Ask them for the project's **own cluster** (name →
+`compute:` in `jobs/*.yml`; machine type → `cost` in `config.yml`).
 
 ## Rules (what not to do)
 
