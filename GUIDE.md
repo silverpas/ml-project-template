@@ -26,7 +26,29 @@ replace the rest.
 
 ## 2. Writing your code
 
-**One small script per step.** The example has:
+Write your code the way you like: scripts, a package, notebooks turned into
+scripts. The platform only cares about what goes in and what comes out.
+
+### 2a. What your code must do
+
+1. **Run as a command**, for example `python train.py` or
+   `python -m mypackage.train`. That is what an Azure ML job and the GitHub
+   workflows run.
+2. **Read and write platform data through the shared data helper**
+   (`src/data.py`), not with your own connection code. Today it reads files
+   and Delta tables; later it also reads and writes Fabric tables.
+3. **Log every training run to MLflow**: parameters, metrics, the data
+   version, the git commit, and the model with its input signature.
+4. **Save the model in MLflow format** (for example `mlflow.sklearn.log_model`).
+   This is what lets the platform register it, approve it, **export** it as a
+   standard folder and use it in Azure ML, Fabric or on a laptop.
+5. **Register a better model as `candidate`**, and never set `champion`
+   yourself: that happens only after approval (section 3).
+
+### 2b. One way to do it: the example in this repo
+
+The repo comes with a complete project that meets all of the above. Use it as
+it is, adapt it, or replace it.
 
 | Step | Script | What it does |
 |---|---|---|
@@ -34,22 +56,19 @@ replace the rest.
 | Train | `src/train.py` | Train the model and log everything to MLflow |
 | Evaluate | `src/evaluate.py` | Compare the new model with the approved one on the same test data |
 | Register | `src/register.py` | Save a better model as a new version, marked `candidate` |
-| Export | `src/export.py` | Save the approved model as a standard MLflow folder |
+| Export | `src/export.py` | Save an approved model as a standard MLflow folder |
 | Score | `src/score.py` | Make predictions with the approved model |
 
-You can have fewer or more steps. A few habits make your code run the same
-everywhere (laptop, terminal, Azure ML, GitHub):
-
-- **Paths in, paths out.** Each script reads its inputs from paths and writes
-  its outputs to paths given on the command line (`argparse`), for example
-  `python -m src.prep --input data/raw/file.csv --out data/processed`.
-- **Settings in `config.yml`**, not in the code: column names, model
-  parameters, the metric that decides which model is better.
-- **Read data in one place** (`src/data.py`), so a new data source is one change.
-- **Log with MLflow**: parameters, metrics, the data version, the git commit
-  and the model. You don't need to set anything up: locally MLflow writes to
-  `mlflow.db`, and inside Azure ML it writes to your workspace by itself.
-- **Write tests** for your own logic in `tests/`, and run `pytest` before you push.
+It comes with everything to run it: settings in `config.yml`, tests in
+`tests/`, Azure ML job files in `jobs/` (`train-register.yml`,
+`batch-score.yml`) and GitHub workflows in `.github/workflows/` (train,
+approve, score every night). If you keep the same commands, all of it works
+without changes. If you write your own code, change the `command` lines in
+`jobs/*.yml` to call it. Two things the workflows expect from the code:
+`train.yml` shows `outputs/evaluation.md` and reads the new version number
+from `outputs/registration.json`, and `deploy.yml` calls
+`python -m src.register --promote <version>` and `python -m src.export`. Keep
+those (they work with any MLflow model) or change the workflows to match.
 
 ## 3. The rules every project follows
 
@@ -78,7 +97,9 @@ safe to use.
 
 ### A. GitHub workflows (for the real runs)
 
-Open the repo's **Actions** tab:
+This is the ready-made way: the workflows in `.github/workflows/` run the job
+files in `jobs/`, which run the example code (or yours, see 2b). Open the
+repo's **Actions** tab:
 
 - **Train (Azure ML)** → *Run workflow*: trains in Azure ML. If the new model
   is better, the run page says which version to approve.
