@@ -46,6 +46,7 @@ jobs/               train-register.yml, batch-score.yml   (Azure ML CLI v2 job s
 environment/        conda.yml: packages for the Azure ML jobs (same versions as requirements.txt)
 docs/azure-sandbox.md   the whole flow in Azure ML by hand, from the laptop
 notebooks/          fabric_batch_score.ipynb: OPTIONAL option A (PREDICT in Fabric)
+GUIDE.md            for people: project layout, the rules, 3 ways to run the code
 model-card.md       owner, purpose, data version, metrics, approvals
 requirements.txt    pinned packages; requirements-azure.txt adds azureml-mlflow;
                     pyproject.toml: ruff settings

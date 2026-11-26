@@ -7,6 +7,10 @@ from this template, swap the example for your own data, and keep the rest.
 The example inside (use case `tool-wear`, department `manufacturing`) predicts
 **machine failures** from sensor readings.
 
+**New here? Start with [GUIDE.md](GUIDE.md):** how a project is organised, the
+rules every project follows, and three ways to run your code (GitHub
+workflows, your terminal, Azure ML studio).
+
 **Data credit:** the example uses the public
 [AI4I 2020 Predictive Maintenance dataset](https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset)
 (UCI Machine Learning Repository, id 601, CC BY 4.0).
