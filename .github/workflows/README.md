@@ -29,10 +29,11 @@ required reviewers need a paid GitHub plan; on public ones they are free.
 
 The Azure workflows log in with **OIDC** (GitHub proves who it is to Azure; no
 password is stored). They read these **GitHub variables** (IDs, not secrets),
-which the platform team gives you:
+which the platform team sets in your repo when it creates it:
 `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
 `AZURE_RESOURCE_GROUP`, `AZURE_ML_WORKSPACE`. Until they are set, the Azure
 workflows are skipped (shown as grey, not red).
 
-**For a new use case:** add your reviewers to the `production` environment and
-set the five variables. Delete `demo-local-flow.yml` once Azure works.
+**For a new use case:** check that the five variables and the reviewers of the
+`production` environment are there (the platform sets them). Delete
+`demo-local-flow.yml` once Azure works.

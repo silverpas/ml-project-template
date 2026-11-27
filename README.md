@@ -114,9 +114,10 @@ stand-in for the Gold predictions table), `outputs/`, `mlflow.db`, `mlruns/`, `.
 
 ## Start a new use case
 
-1. Your request is approved (via the ML requests process) and the platform
-   team has set up Azure for your use case.
-2. Create a repo from this template ("Use this template" on GitHub).
+1. Your request is approved (via the ML requests process). The platform team
+   creates your project: its own resource group on Azure and your repo from this
+   template, with the Azure variables and the approval gate already set.
+2. Read [GUIDE.md](GUIDE.md).
 3. In `config.yml`, change the `data` section (source, target, columns to drop),
    `model.name`, and in `cost` your cluster's machine type and price per hour
    (every Azure ML job logs its estimated cost to MLflow).
@@ -124,7 +125,7 @@ stand-in for the Gold predictions table), `outputs/`, `mlflow.db`, `mlruns/`, `.
    the data (file or Delta table) happens in `src/data.py`.
 5. Change the fake data in `tests/conftest.py` to your columns.
 6. Run the pipeline and `pytest` locally until the tests pass and the metrics make sense.
-7. Set the five GitHub variables and add reviewers to the `production` environment.
+7. Run **Train** from the Actions tab: the same code, now in Azure ML.
 
 ## Rules
 
